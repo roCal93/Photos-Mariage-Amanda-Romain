@@ -87,6 +87,8 @@ function getServiceClient() {
 function normalizePhoto<T extends PhotoRecord & StrapiEntity>(photo: T): T {
   return {
     ...photo,
+    externalUrl:
+      cleanImageUrl(photo.externalUrl || undefined) || photo.externalUrl,
     image: photo.image
       ? {
           ...photo.image,

@@ -111,12 +111,13 @@ export function cleanImageUrl(url: string | undefined): string | undefined {
   if (url.startsWith('/')) {
     const strapiUrl =
       process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'
-    return `${strapiUrl}${url}`
+    return `${strapiUrl.replace(/\/$/, '')}/${url.replace(/^\/+/, '')}`
   }
 
   // Pour les URLs absolues, supprimer les paramètres de requête problématiques
   try {
     const urlObj = new URL(url)
+    urlObj.pathname = urlObj.pathname.replace(/\/{2,}/g, '/')
     // Supprimer les paramètres qui peuvent causer des problèmes avec Next.js Image
     const paramsToRemove = ['publicationState', 'status']
     paramsToRemove.forEach((param) => urlObj.searchParams.delete(param))

@@ -12,6 +12,10 @@ const BUNNY_CDN_URL = process.env.BUNNY_CDN_URL
 const BUNNY_STORAGE_ENDPOINT =
   process.env.BUNNY_STORAGE_ENDPOINT || 'https://storage.bunnycdn.com'
 
+function joinUrl(baseUrl: string, path: string) {
+  return `${baseUrl.replace(/\/$/, '')}/${path.replace(/^\/+/, '')}`
+}
+
 function getUploadedFile(files: unknown): MultipartFile | null {
   if (!files || typeof files !== 'object') return null
 
@@ -74,7 +78,7 @@ export default {
       }
 
       ctx.body = {
-        url: `${BUNNY_CDN_URL}/${path}`,
+        url: joinUrl(BUNNY_CDN_URL, path),
         mime: mimeType,
         title: fileTitle,
       }
