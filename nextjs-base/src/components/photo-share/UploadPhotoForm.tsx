@@ -11,7 +11,7 @@ type SubmitState = {
   message?: string
 }
 
-const MAX_IMAGE_SIZE_BYTES = 20 * 1024 * 1024
+const MAX_IMAGE_SIZE_BYTES = 30 * 1024 * 1024
 const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024
 
 type CloudinaryUploadResponse = {
@@ -190,7 +190,7 @@ export function UploadPhotoForm({ requireModeration }: UploadPhotoFormProps) {
     if (oversizedImage) {
       setState({
         type: 'error',
-        message: 'Image trop lourde (max 10 Mo).',
+        message: 'Image trop lourde (max 30 Mo).',
       })
       setSubmitting(false)
       return

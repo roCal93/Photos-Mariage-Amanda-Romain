@@ -51,7 +51,7 @@ function isAllowedMimeType(mimeType: string) {
 function getMaxFileSize(file: File) {
   // Vercel body limits can reject large video uploads before processing.
   // Keep a conservative server-side cap to return a clear error message.
-  return file.type.startsWith('video/') ? 4 * 1024 * 1024 : 20 * 1024 * 1024
+  return file.type.startsWith('video/') ? 4 * 1024 * 1024 : 30 * 1024 * 1024
 }
 
 function readString(
@@ -277,7 +277,7 @@ export async function POST(request: NextRequest) {
         {
           error: file.type.startsWith('video/')
             ? 'Chaque video doit faire moins de 4 Mo pour cet upload web.'
-            : 'Chaque image doit faire moins de 20 Mo.',
+            : 'Chaque image doit faire moins de 30 Mo.',
         },
         { status: 400 }
       )
