@@ -42,7 +42,7 @@ async function compressImage(file: File, maxBytes: number): Promise<File> {
   ctx.drawImage(bitmap, 0, 0)
   bitmap.close()
 
-  for (const quality of [0.92, 0.85, 0.75, 0.6]) {
+  for (const quality of [0.85, 0.75, 0.6, 0.45, 0.3]) {
     const blob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob(resolve, 'image/jpeg', quality)
     )
