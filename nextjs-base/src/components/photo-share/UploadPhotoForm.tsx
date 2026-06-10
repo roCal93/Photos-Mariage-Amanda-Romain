@@ -27,85 +27,6 @@ const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
 const CLOUDINARY_UPLOAD_PRESET =
   process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
 
-function loadImageFromUrl(url: string) {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new window.Image()
-    image.onload = () => resolve(image)
-    image.onerror = () => reject(new Error("Impossible de charger l'image."))
-    image.src = url
-  })
-}
-
-async function normalizeImageFile(file: File): Promise<File> {
-  if (!file.type.startsWith('image/')) {
-    return file
-  }
-
-  const targetType = 'image/jpeg'
-
-  try {
-    if (typeof createImageBitmap === 'function') {
-      const bitmap = await createImageBitmap(file, {
-        imageOrientation: 'from-image',
-      })
-      const canvas = document.createElement('canvas')
-      canvas.width = bitmap.width
-      canvas.height = bitmap.height
-      const context = canvas.getContext('2d')
-
-      if (!context) {
-        bitmap.close()
-        return file
-      }
-
-      context.drawImage(bitmap, 0, 0)
-      bitmap.close()
-
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob(resolve, targetType, 0.92)
-      })
-
-      if (!blob) return file
-
-      const baseName = file.name.replace(/\.[^.]+$/, '') || 'photo'
-      return new File([blob], `${baseName}.jpg`, {
-        type: targetType,
-        lastModified: file.lastModified,
-      })
-    }
-
-    const objectUrl = URL.createObjectURL(file)
-
-    try {
-      const image = await loadImageFromUrl(objectUrl)
-      const canvas = document.createElement('canvas')
-      canvas.width = image.naturalWidth || image.width
-      canvas.height = image.naturalHeight || image.height
-      const context = canvas.getContext('2d')
-
-      if (!context) return file
-
-      context.drawImage(image, 0, 0)
-
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob(resolve, targetType, 0.92)
-      })
-
-      if (!blob) return file
-
-      const baseName = file.name.replace(/\.[^.]+$/, '') || 'photo'
-      return new File([blob], `${baseName}.jpg`, {
-        type: targetType,
-        lastModified: file.lastModified,
-      })
-    } finally {
-      URL.revokeObjectURL(objectUrl)
-    }
-  } catch {
-    return file
-  }
-}
-
 async function uploadVideoToCloudinary(file: File) {
   if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
     throw new Error(
@@ -142,6 +63,46 @@ async function uploadVideoToCloudinary(file: File) {
   return {
     url: json.secure_url,
     mime: `video/${json.format || 'mp4'}`,
+    width: json.width,
+    height: json.height,
+    title: json.original_filename || file.name.replace(/\.[^.]+$/, ''),
+  }
+}
+
+async function uploadImageToCloudinary(file: File) {
+  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+    throw new Error('Cloudinary non configure sur le front.')
+  }
+
+  const cloudinaryBody = new FormData()
+  cloudinaryBody.append('file', file)
+  cloudinaryBody.append('upload_preset', CLOUDINARY_UPLOAD_PRESET)
+  cloudinaryBody.append('resource_type', 'image')
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+    {
+      method: 'POST',
+      body: cloudinaryBody,
+    }
+  )
+
+  const json = (await response.json().catch(() => null)) as
+    | CloudinaryUploadResponse
+    | { error?: { message?: string } }
+    | null
+
+  if (!response.ok || !json || !('secure_url' in json)) {
+    const message =
+      json && 'error' in json
+        ? json.error?.message || 'Echec upload Cloudinary.'
+        : 'Echec upload Cloudinary.'
+    throw new Error(message)
+  }
+
+  return {
+    url: json.secure_url,
+    mime: `image/${json.format || 'jpeg'}`,
     width: json.width,
     height: json.height,
     title: json.original_filename || file.name.replace(/\.[^.]+$/, ''),
@@ -200,15 +161,19 @@ export function UploadPhotoForm({ requireModeration }: UploadPhotoFormProps) {
       let uploadedCount = 0
 
       if (imageFiles.length > 0) {
-        body.delete('files')
-        const normalizedFiles = await Promise.all(
-          imageFiles.map((file) => normalizeImageFile(file))
+        const uploadedImages = await Promise.all(
+          imageFiles.map((file) => uploadImageToCloudinary(file))
         )
-        normalizedFiles.forEach((file) => body.append('files', file))
 
         const imageResponse = await fetch('/api/photo-upload', {
           method: 'POST',
-          body,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            authorName: (body.get('authorName') as string) || '',
+            externalMedia: uploadedImages,
+          }),
         })
 
         const imageJson = (await imageResponse.json().catch(() => null)) as {
@@ -309,7 +274,7 @@ export function UploadPhotoForm({ requireModeration }: UploadPhotoFormProps) {
           ? "Les dépôts sont modérés. Les médias resteront privés jusqu'à validation."
           : 'Les dépôts valides sont publiés automatiquement après envoi.'}
         <p className="mt-2 text-xs text-amber-800/90">
-          Limites: image 20 Mo, video 200 Mo.
+          Limites: image 30 Mo, video 200 Mo.
         </p>
       </div>
 
