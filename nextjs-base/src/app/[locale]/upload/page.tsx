@@ -35,7 +35,7 @@ export default async function UploadPage({
               Formulaire de téléchargement
             </p>
             <h1 className="mt-4 text-4xl font-semibold tracking-tight text-stone-950">
-              Envoyer une ou plusieurs médias.
+              Envoyer un ou plusieurs médias.
             </h1>
 
             {!hasServiceToken ? (
