@@ -11,7 +11,7 @@ type SubmitState = {
   message?: string
 }
 
-const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024
+const MAX_IMAGE_SIZE_BYTES = 20 * 1024 * 1024
 const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024
 
 type CloudinaryUploadResponse = {
@@ -306,10 +306,10 @@ export function UploadPhotoForm({ requireModeration }: UploadPhotoFormProps) {
 
       <div className="rounded-3xl bg-amber-50 p-4 text-sm text-amber-900">
         {requireModeration
-          ? "Les depots sont moderes. Les medias resteront prives jusqu'a validation."
-          : 'Les depots valides sont publies automatiquement apres envoi.'}
+          ? "Les dépôts sont modérés. Les médias resteront privés jusqu'à validation."
+          : 'Les dépôts valides sont publiés automatiquement après envoi.'}
         <p className="mt-2 text-xs text-amber-800/90">
-          Limites: image 10 Mo, video 200 Mo.
+          Limites: image 20 Mo, video 200 Mo.
         </p>
       </div>
 
@@ -330,7 +330,7 @@ export function UploadPhotoForm({ requireModeration }: UploadPhotoFormProps) {
         disabled={submitting}
         className="inline-flex min-h-12 items-center justify-center rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {submitting ? 'Envoi en cours...' : 'Envoyer les photos'}
+        {submitting ? 'Envoi en cours...' : 'Envoyer'}
       </button>
     </form>
   )
