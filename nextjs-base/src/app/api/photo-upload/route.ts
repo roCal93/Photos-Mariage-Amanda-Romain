@@ -277,7 +277,7 @@ export async function POST(request: NextRequest) {
         {
           error: file.type.startsWith('video/')
             ? 'Chaque video doit faire moins de 4 Mo pour cet upload web.'
-            : 'Chaque image doit faire moins de 10 Mo.',
+            : 'Chaque image doit faire moins de 20 Mo.',
         },
         { status: 400 }
       )
