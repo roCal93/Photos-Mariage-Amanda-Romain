@@ -28,13 +28,18 @@ function normalizeOptionalToken(token: string | undefined) {
 export type PhotoRecord = {
   title: string
   slug: string
+  mediaType?: 'image' | 'video'
+  externalUrl?: string | null
+  externalMime?: string | null
+  externalWidth?: number | null
+  externalHeight?: number | null
   caption?: string | null
   authorName: string
   takenAt?: string | null
   tags?: string[] | null
   visibility: 'public' | 'hidden'
   moderationStatus: 'pending' | 'approved' | 'rejected'
-  image: StrapiMedia
+  image?: StrapiMedia | null
   createdAt?: string
 }
 
@@ -97,6 +102,11 @@ export async function getPublicPhotos(page = 1, pageSize = 24) {
     fields: [
       'title',
       'slug',
+      'mediaType',
+      'externalUrl',
+      'externalMime',
+      'externalWidth',
+      'externalHeight',
       'caption',
       'authorName',
       'takenAt',
@@ -140,6 +150,11 @@ export async function getPublicPhotoBySlug(slug: string) {
     fields: [
       'title',
       'slug',
+      'mediaType',
+      'externalUrl',
+      'externalMime',
+      'externalWidth',
+      'externalHeight',
       'caption',
       'authorName',
       'takenAt',

@@ -11,6 +11,14 @@ type UploadResponseItem = {
   url: string
 }
 
+type ExternalMediaItem = {
+  url: string
+  mime: string
+  width?: number
+  height?: number
+  title?: string
+}
+
 function slugifyTitle(input: string) {
   return input
     .normalize('NFD')
@@ -41,7 +49,9 @@ function isAllowedMimeType(mimeType: string) {
 }
 
 function getMaxFileSize(file: File) {
-  return file.type.startsWith('video/') ? 200 * 1024 * 1024 : 10 * 1024 * 1024
+  // Vercel body limits can reject large video uploads before processing.
+  // Keep a conservative server-side cap to return a clear error message.
+  return file.type.startsWith('video/') ? 4 * 1024 * 1024 : 10 * 1024 * 1024
 }
 
 function readString(
@@ -146,6 +156,80 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  const contentType = request.headers.get('content-type') || ''
+
+  if (contentType.includes('application/json')) {
+    const payload = (await request.json().catch(() => null)) as {
+      authorName?: string
+      externalMedia?: ExternalMediaItem[]
+    } | null
+
+    const authorName = payload?.authorName?.trim() || ''
+    const externalMedia = Array.isArray(payload?.externalMedia)
+      ? payload.externalMedia
+      : []
+
+    if (!authorName) {
+      return NextResponse.json(
+        { error: 'Champ vide: authorName' },
+        { status: 400 }
+      )
+    }
+
+    if (externalMedia.length === 0) {
+      return NextResponse.json(
+        { error: 'Aucun media externe recu.' },
+        { status: 400 }
+      )
+    }
+
+    const moderationStatus = 'approved'
+
+    try {
+      for (const [index, item] of externalMedia.entries()) {
+        if (!item.url || !item.mime) {
+          throw new Error('Media externe invalide: url/mime requis.')
+        }
+
+        const safeTitle =
+          (item.title && item.title.trim()) ||
+          `video-${Date.now()}-${index + 1}`
+        const baseSlug = slugifyTitle(safeTitle) || 'video'
+
+        await tryCreatePhoto(['/api/photos?status=published', '/api/photos'], {
+          title: safeTitle.slice(0, 120),
+          slug: `${baseSlug}-${Date.now()}-${index + 1}`,
+          authorName,
+          visibility: 'public',
+          moderationStatus,
+          mediaType: 'video',
+          externalUrl: item.url,
+          externalMime: item.mime,
+          externalWidth: typeof item.width === 'number' ? item.width : null,
+          externalHeight: typeof item.height === 'number' ? item.height : null,
+        })
+      }
+
+      return NextResponse.json(
+        {
+          ok: true,
+          message: `${externalMedia.length} media(s) publie(s) avec succes.`,
+        },
+        { status: 201 }
+      )
+    } catch (error) {
+      return NextResponse.json(
+        {
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Erreur lors de la creation du media externe.',
+        },
+        { status: 502 }
+      )
+    }
+  }
+
   const formData = await request.formData()
 
   let authorName = ''
@@ -192,7 +276,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: file.type.startsWith('video/')
-            ? 'Chaque video doit faire moins de 200 Mo.'
+            ? 'Chaque video doit faire moins de 4 Mo pour cet upload web.'
             : 'Chaque image doit faire moins de 10 Mo.',
         },
         { status: 400 }
@@ -243,6 +327,7 @@ export async function POST(request: NextRequest) {
         authorName,
         visibility: 'public',
         moderationStatus,
+        mediaType: 'image',
         image: uploadedFile.id,
       }
 

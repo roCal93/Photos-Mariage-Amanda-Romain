@@ -33,8 +33,26 @@ export default {
     image: {
       type: 'media',
       multiple: false,
-      required: true,
+      required: false,
       allowedTypes: ['images', 'videos'],
+    },
+    mediaType: {
+      type: 'enumeration',
+      enum: ['image', 'video'],
+      default: 'image',
+      required: true,
+    },
+    externalUrl: {
+      type: 'string',
+    },
+    externalMime: {
+      type: 'string',
+    },
+    externalWidth: {
+      type: 'integer',
+    },
+    externalHeight: {
+      type: 'integer',
     },
     caption: {
       type: 'text',

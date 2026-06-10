@@ -11,6 +11,22 @@ type SubmitState = {
   message?: string
 }
 
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024
+const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024
+
+type CloudinaryUploadResponse = {
+  secure_url: string
+  resource_type: 'image' | 'video' | 'raw'
+  width?: number
+  height?: number
+  format?: string
+  original_filename?: string
+}
+
+const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+const CLOUDINARY_UPLOAD_PRESET =
+  process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+
 function loadImageFromUrl(url: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new window.Image()
@@ -90,6 +106,48 @@ async function normalizeImageFile(file: File): Promise<File> {
   }
 }
 
+async function uploadVideoToCloudinary(file: File) {
+  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+    throw new Error(
+      'Cloudinary non configure sur le front (NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME / NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET).'
+    )
+  }
+
+  const cloudinaryBody = new FormData()
+  cloudinaryBody.append('file', file)
+  cloudinaryBody.append('upload_preset', CLOUDINARY_UPLOAD_PRESET)
+  cloudinaryBody.append('resource_type', 'video')
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`,
+    {
+      method: 'POST',
+      body: cloudinaryBody,
+    }
+  )
+
+  const json = (await response.json().catch(() => null)) as
+    | CloudinaryUploadResponse
+    | { error?: { message?: string } }
+    | null
+
+  if (!response.ok || !json || !('secure_url' in json)) {
+    const message =
+      json && 'error' in json
+        ? json.error?.message || 'Echec upload Cloudinary.'
+        : 'Echec upload Cloudinary.'
+    throw new Error(message)
+  }
+
+  return {
+    url: json.secure_url,
+    mime: `video/${json.format || 'mp4'}`,
+    width: json.width,
+    height: json.height,
+    title: json.original_filename || file.name.replace(/\.[^.]+$/, ''),
+  }
+}
+
 export function UploadPhotoForm({ requireModeration }: UploadPhotoFormProps) {
   const [submitting, setSubmitting] = useState(false)
   const [state, setState] = useState<SubmitState>({ type: 'idle' })
@@ -105,47 +163,116 @@ export function UploadPhotoForm({ requireModeration }: UploadPhotoFormProps) {
       .getAll('files')
       .filter((entry): entry is File => entry instanceof File)
 
-    if (rawFiles.length > 0) {
-      body.delete('files')
-      const normalizedFiles = await Promise.all(
-        rawFiles.map((file) => normalizeImageFile(file))
-      )
-      normalizedFiles.forEach((file) => body.append('files', file))
+    const videoFiles = rawFiles.filter((file) => file.type.startsWith('video/'))
+    const imageFiles = rawFiles.filter(
+      (file) => !file.type.startsWith('video/')
+    )
+
+    const oversizedVideo = videoFiles.find(
+      (file) =>
+        file.type.startsWith('video/') && file.size > MAX_VIDEO_SIZE_BYTES
+    )
+
+    if (oversizedVideo) {
+      setState({
+        type: 'error',
+        message: 'Video trop lourde (max 200 Mo).',
+      })
+      setSubmitting(false)
+      return
+    }
+
+    const oversizedImage = imageFiles.find(
+      (file) =>
+        file.type.startsWith('image/') && file.size > MAX_IMAGE_SIZE_BYTES
+    )
+
+    if (oversizedImage) {
+      setState({
+        type: 'error',
+        message: 'Image trop lourde (max 10 Mo).',
+      })
+      setSubmitting(false)
+      return
     }
 
     try {
-      const response = await fetch('/api/photo-upload', {
-        method: 'POST',
-        body,
-      })
+      let uploadedCount = 0
 
-      const json = (await response.json().catch(() => null)) as {
-        error?: string
-        message?: string
-      } | null
+      if (imageFiles.length > 0) {
+        body.delete('files')
+        const normalizedFiles = await Promise.all(
+          imageFiles.map((file) => normalizeImageFile(file))
+        )
+        normalizedFiles.forEach((file) => body.append('files', file))
 
-      if (!response.ok) {
-        setState({
-          type: 'error',
-          message:
-            json?.error || 'Le depot a echoue. Reessaie dans un instant.',
+        const imageResponse = await fetch('/api/photo-upload', {
+          method: 'POST',
+          body,
         })
-        return
+
+        const imageJson = (await imageResponse.json().catch(() => null)) as {
+          error?: string
+        } | null
+
+        if (!imageResponse.ok) {
+          setState({
+            type: 'error',
+            message:
+              imageJson?.error ||
+              'Le depot image a echoue. Reessaie dans un instant.',
+          })
+          return
+        }
+
+        uploadedCount += imageFiles.length
+      }
+
+      if (videoFiles.length > 0) {
+        const uploadedVideos = await Promise.all(
+          videoFiles.map((file) => uploadVideoToCloudinary(file))
+        )
+
+        const videoResponse = await fetch('/api/photo-upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            authorName: (body.get('authorName') as string) || '',
+            externalMedia: uploadedVideos,
+          }),
+        })
+
+        const videoJson = (await videoResponse.json().catch(() => null)) as {
+          error?: string
+        } | null
+
+        if (!videoResponse.ok) {
+          setState({
+            type: 'error',
+            message:
+              videoJson?.error ||
+              'Le depot video a echoue. Reessaie dans un instant.',
+          })
+          return
+        }
+
+        uploadedCount += videoFiles.length
       }
 
       form.reset()
       setState({
         type: 'success',
-        message:
-          json?.message ||
-          (requireModeration
-            ? 'Photos recues. Elles seront visibles apres validation.'
-            : 'Photos publiees avec succes.'),
+        message: `${uploadedCount} media(s) publie(s) avec succes.`,
       })
-    } catch {
+    } catch (error) {
       setState({
         type: 'error',
-        message: "Erreur reseau pendant l'envoi. Reessaie dans un instant.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Erreur reseau pendant l'envoi. Reessaie dans un instant.",
       })
     } finally {
       setSubmitting(false)
@@ -181,6 +308,9 @@ export function UploadPhotoForm({ requireModeration }: UploadPhotoFormProps) {
         {requireModeration
           ? "Les depots sont moderes. Les medias resteront prives jusqu'a validation."
           : 'Les depots valides sont publies automatiquement apres envoi.'}
+        <p className="mt-2 text-xs text-amber-800/90">
+          Limites: image 10 Mo, video 200 Mo.
+        </p>
       </div>
 
       {state.type !== 'idle' ? (

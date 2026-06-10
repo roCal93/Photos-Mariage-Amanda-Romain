@@ -8,6 +8,24 @@ function isVideo(mime?: string) {
   return typeof mime === 'string' && mime.startsWith('video/')
 }
 
+function getMediaMime(photo: {
+  mediaType?: 'image' | 'video'
+  externalMime?: string | null
+  image?: { mime?: string | null } | null
+}) {
+  if (photo.mediaType === 'video') return photo.externalMime || 'video/mp4'
+  return photo.image?.mime || photo.externalMime || undefined
+}
+
+function getMediaUrl(photo: {
+  mediaType?: 'image' | 'video'
+  externalUrl?: string | null
+  image?: { url?: string | null } | null
+}) {
+  if (photo.mediaType === 'video') return photo.externalUrl || ''
+  return photo.image?.url || photo.externalUrl || ''
+}
+
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({
@@ -27,7 +45,9 @@ export async function generateMetadata({
     description: `Media partage par ${photo.authorName}`,
     openGraph: {
       images:
-        photo.image?.url && !isVideo(photo.image.mime) ? [photo.image.url] : [],
+        getMediaUrl(photo) && !isVideo(getMediaMime(photo))
+          ? [getMediaUrl(photo)]
+          : [],
     },
   }
 }
@@ -88,9 +108,9 @@ export default async function PhotoDetailPage({
               </Link>
             ) : null}
 
-            {isVideo(photo.image.mime) ? (
+            {isVideo(getMediaMime(photo)) ? (
               <video
-                src={photo.image.url}
+                src={getMediaUrl(photo)}
                 className="h-full w-full object-contain"
                 controls
                 playsInline
@@ -98,8 +118,8 @@ export default async function PhotoDetailPage({
               />
             ) : (
               <Image
-                src={photo.image.url}
-                alt={photo.image.alternativeText || photo.title}
+                src={getMediaUrl(photo)}
+                alt={photo.image?.alternativeText || photo.title}
                 fill
                 priority
                 className="object-contain"

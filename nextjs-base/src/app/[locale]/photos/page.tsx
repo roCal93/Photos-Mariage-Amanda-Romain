@@ -7,6 +7,24 @@ function isVideo(mime?: string) {
   return typeof mime === 'string' && mime.startsWith('video/')
 }
 
+function getMediaMime(photo: {
+  mediaType?: 'image' | 'video'
+  externalMime?: string | null
+  image?: { mime?: string | null } | null
+}) {
+  if (photo.mediaType === 'video') return photo.externalMime || 'video/mp4'
+  return photo.image?.mime || photo.externalMime || undefined
+}
+
+function getMediaUrl(photo: {
+  mediaType?: 'image' | 'video'
+  externalUrl?: string | null
+  image?: { url?: string | null } | null
+}) {
+  if (photo.mediaType === 'video') return photo.externalUrl || ''
+  return photo.image?.url || photo.externalUrl || ''
+}
+
 function getCardSpanClass(width?: number, height?: number) {
   if (!width || !height) {
     return 'sm:col-span-1 xl:col-span-1'
@@ -67,8 +85,12 @@ export default async function PhotosPage({
               <div
                 key={photo.documentId}
                 className={getCardSpanClass(
-                  photo.image.width,
-                  photo.image.height
+                  photo.mediaType === 'video'
+                    ? (photo.externalWidth ?? undefined)
+                    : (photo.image?.width ?? undefined),
+                  photo.mediaType === 'video'
+                    ? (photo.externalHeight ?? undefined)
+                    : (photo.image?.height ?? undefined)
                 )}
               >
                 <Link
@@ -76,10 +98,10 @@ export default async function PhotosPage({
                   className="group block overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-[0_24px_80px_-48px_rgba(15,23,42,0.45)] transition hover:-translate-y-1 hover:shadow-[0_32px_90px_-44px_rgba(15,23,42,0.5)]"
                 >
                   <div className="relative h-80 bg-stone-100 md:h-[26rem] xl:h-[30rem]">
-                    {isVideo(photo.image.mime) ? (
+                    {isVideo(getMediaMime(photo)) ? (
                       <>
                         <video
-                          src={photo.image.url}
+                          src={getMediaUrl(photo)}
                           className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
                           muted
                           playsInline
@@ -93,8 +115,8 @@ export default async function PhotosPage({
                       </>
                     ) : (
                       <Image
-                        src={photo.image.url}
-                        alt={photo.image.alternativeText || photo.title}
+                        src={getMediaUrl(photo)}
+                        alt={photo.image?.alternativeText || photo.title}
                         fill
                         className="object-cover transition duration-500 group-hover:scale-[1.03]"
                         style={{ ['imageOrientation' as never]: 'from-image' }}
