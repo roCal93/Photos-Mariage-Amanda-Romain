@@ -1,0 +1,25 @@
+{
+  "starterVersion": "2.1.0",
+  "blockLibraryVersion": "2.0.0",
+  "selectedBlocks": {
+    "TextBlock": "1.4.0",
+    "ImageBlock": "1.2.0",
+    "BackgroundBlock": "1.0.0",
+    "ButtonBlock": "1.1.0",
+    "HeroBlockSimpleText": "1.1.0",
+    "TextImageBlock": "1.4.0",
+    "CardsBlock": "1.3.0",
+    "CarouselBlock": "1.1.0",
+    "TimelineBlock": "1.1.0",
+    "WorkBlock": "1.0.0",
+    "ContactFormBlock": "1.0.0",
+    "BlankBlock": "1.0.0"
+  },
+  "preset": "vitrine",
+  "createdAt": "2026-06-08T15:12:34.076Z",
+  "starterProfile": "base",
+  "includeBlog": false,
+  "includeEspaceClient": false,
+  "autoSync": true,
+  "lastSync": "2026-06-08T15:12:34.078Z"
+}

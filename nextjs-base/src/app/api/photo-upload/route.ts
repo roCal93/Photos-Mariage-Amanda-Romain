@@ -1,0 +1,296 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { checkRateLimit, getClientIpFromHeaders } from '@/lib/rate-limit'
+
+const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL
+const STRAPI_WRITE_API_TOKEN =
+  process.env.STRAPI_WRITE_API_TOKEN || process.env.STRAPI_API_TOKEN
+
+type UploadResponseItem = {
+  id: number
+  documentId?: string
+  url: string
+}
+
+function slugifyTitle(input: string) {
+  return input
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80)
+}
+
+function buildPhotoTitle(file: File, index: number) {
+  const rawName = file.name.replace(/\.[^.]+$/, '').trim()
+  if (rawName.length > 0) return rawName.slice(0, 120)
+  return `photo-${index + 1}`
+}
+
+function isAllowedMimeType(mimeType: string) {
+  return [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/heic',
+    'image/heif',
+    'video/mp4',
+    'video/quicktime',
+    'video/webm',
+  ].includes(mimeType)
+}
+
+function getMaxFileSize(file: File) {
+  return file.type.startsWith('video/') ? 200 * 1024 * 1024 : 10 * 1024 * 1024
+}
+
+function readString(
+  formData: FormData,
+  key: string,
+  options?: { required?: boolean; maxLength?: number }
+) {
+  const value = formData.get(key)
+  if (typeof value !== 'string') {
+    if (options?.required) {
+      throw new Error(`Champ manquant: ${key}`)
+    }
+    return ''
+  }
+
+  const normalized = value.trim()
+
+  if (options?.required && normalized.length === 0) {
+    throw new Error(`Champ vide: ${key}`)
+  }
+
+  if (options?.maxLength && normalized.length > options.maxLength) {
+    throw new Error(`Champ trop long: ${key}`)
+  }
+
+  return normalized
+}
+
+async function deleteUploadedMedia(fileId: number) {
+  if (!STRAPI_URL || !STRAPI_WRITE_API_TOKEN) return
+
+  await fetch(`${STRAPI_URL}/api/upload/files/${fileId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${STRAPI_WRITE_API_TOKEN}`,
+    },
+  }).catch(() => undefined)
+}
+
+async function tryCreatePhoto(
+  paths: Array<string>,
+  payload: Record<string, unknown>
+) {
+  if (!STRAPI_URL || !STRAPI_WRITE_API_TOKEN) {
+    throw new Error("Configuration Strapi manquante pour l'upload photo.")
+  }
+
+  let lastError: { status: number; body: string } | null = null
+
+  for (const path of paths) {
+    const response = await fetch(`${STRAPI_URL}${path}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${STRAPI_WRITE_API_TOKEN}`,
+      },
+      body: JSON.stringify({ data: payload }),
+    })
+
+    if (response.ok) {
+      return response
+    }
+
+    lastError = {
+      status: response.status,
+      body: await response.text(),
+    }
+  }
+
+  throw new Error(
+    lastError
+      ? `Creation photo echouee (${lastError.status}): ${lastError.body}`
+      : 'Creation photo echouee.'
+  )
+}
+
+export async function POST(request: NextRequest) {
+  if (!STRAPI_URL || !STRAPI_WRITE_API_TOKEN) {
+    return NextResponse.json(
+      { error: "Configuration serveur incomplete pour l'upload photo." },
+      { status: 500 }
+    )
+  }
+
+  const clientIp = getClientIpFromHeaders(request.headers)
+  const rateLimit = await checkRateLimit({
+    key: `photo-upload:${clientIp}`,
+    limit: 5,
+    windowMs: 10 * 60 * 1000,
+  })
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Trop de tentatives. Reessaie dans quelques minutes.' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Remaining': String(rateLimit.remaining),
+          'X-RateLimit-Reset': String(rateLimit.resetAt),
+        },
+      }
+    )
+  }
+
+  const formData = await request.formData()
+
+  let authorName = ''
+
+  try {
+    authorName = readString(formData, 'authorName', {
+      required: true,
+      maxLength: 80,
+    })
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Champs obligatoires invalides.',
+      },
+      { status: 400 }
+    )
+  }
+
+  const rawFiles = formData.getAll('files')
+  const files = rawFiles.filter((entry): entry is File => entry instanceof File)
+
+  if (files.length === 0) {
+    return NextResponse.json(
+      { error: 'Au moins une photo est requise.' },
+      { status: 400 }
+    )
+  }
+
+  for (const file of files) {
+    if (!isAllowedMimeType(file.type)) {
+      return NextResponse.json(
+        {
+          error:
+            'Format non supporte. Utilise JPEG, PNG, WebP, HEIC, MP4, MOV ou WebM.',
+        },
+        { status: 400 }
+      )
+    }
+
+    if (file.size > getMaxFileSize(file)) {
+      return NextResponse.json(
+        {
+          error: file.type.startsWith('video/')
+            ? 'Chaque video doit faire moins de 200 Mo.'
+            : 'Chaque image doit faire moins de 10 Mo.',
+        },
+        { status: 400 }
+      )
+    }
+  }
+
+  const moderationStatus = 'approved'
+  const uploadedFileIds: number[] = []
+
+  try {
+    for (const [index, file] of files.entries()) {
+      const uploadBody = new FormData()
+      uploadBody.append('files', file)
+
+      const uploadResponse = await fetch(`${STRAPI_URL}/api/upload`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${STRAPI_WRITE_API_TOKEN}`,
+        },
+        body: uploadBody,
+      })
+
+      if (!uploadResponse.ok) {
+        throw new Error('Upload media impossible pour le moment.')
+      }
+
+      const uploadedItems =
+        (await uploadResponse.json()) as UploadResponseItem[]
+      const uploadedFile = Array.isArray(uploadedItems)
+        ? uploadedItems[0]
+        : null
+
+      if (!uploadedFile) {
+        throw new Error('Aucun media recu apres upload.')
+      }
+
+      uploadedFileIds.push(uploadedFile.id)
+
+      const title = buildPhotoTitle(file, index)
+      const baseSlug = slugifyTitle(title) || 'photo'
+      const photoPayloadBase = {
+        title,
+        slug: `${baseSlug}-${Date.now()}-${index + 1}`,
+        authorName,
+        visibility: 'public',
+        moderationStatus,
+        image: uploadedFile.id,
+      }
+
+      let created = false
+
+      for (const payload of [photoPayloadBase]) {
+        try {
+          await tryCreatePhoto(
+            moderationStatus === 'approved'
+              ? ['/api/photos?status=published', '/api/photos']
+              : ['/api/photos'],
+            payload
+          )
+          created = true
+          break
+        } catch {
+          // Retry with alternate relation identifier.
+        }
+      }
+
+      if (!created) {
+        throw new Error("Impossible de creer l'entree photo dans Strapi.")
+      }
+    }
+
+    return NextResponse.json(
+      {
+        ok: true,
+        message:
+          moderationStatus === 'approved'
+            ? `${files.length} media(s) publie(s) avec succes.`
+            : `${files.length} media(s) recu(s). Ils seront visibles apres validation.`,
+      },
+      { status: 201 }
+    )
+  } catch (error) {
+    // Best-effort cleanup for files uploaded before a later create step failed.
+    if (uploadedFileIds.length > 0) {
+      await Promise.all(
+        uploadedFileIds.map((fileId) => deleteUploadedMedia(fileId))
+      )
+    }
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Erreur lors de la creation de la photo.',
+      },
+      { status: 502 }
+    )
+  }
+}

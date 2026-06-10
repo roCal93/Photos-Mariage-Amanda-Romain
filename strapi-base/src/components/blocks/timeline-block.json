@@ -1,0 +1,16 @@
+{
+  "collectionName": "components_common_timeline_blocks",
+  "info": {
+    "displayName": "Timeline Block",
+    "icon": "calendar-alt",
+    "description": "A timeline block with steps, images, and descriptions."
+  },
+  "options": {},
+  "attributes": {
+    "items": {
+      "type": "component",
+      "repeatable": true,
+      "component": "shared.timeline-item"
+    }
+  }
+}
