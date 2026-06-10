@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import { WeddingRsvpCardBackground } from '@/components/photo-share/WeddingRsvpBackground'
 
 type GalleryPhoto = {
   documentId?: string
@@ -161,45 +162,48 @@ export function PhotoGalleryGrid({ locale, photos }: PhotoGalleryGridProps) {
 
   return (
     <>
-      <div className="mb-6 flex flex-wrap items-center gap-3 rounded-[2rem] border border-stone-200 bg-white p-4 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.25)]">
-        <span className="text-sm font-medium text-stone-700">
-          {selectedKeys.length} fichier(s) selectionne(s) sur {photos.length}
-        </span>
-        <button
-          type="button"
-          onClick={selectAll}
-          className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-950"
-        >
-          Tout selectionner
-        </button>
-        <button
-          type="button"
-          onClick={clearSelection}
-          disabled={selectedKeys.length === 0}
-          className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-950 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Effacer
-        </button>
-        <button
-          type="button"
-          onClick={downloadAll}
-          disabled={photos.length === 0 || downloading}
-          className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-950 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {downloading
-            ? 'Telechargement...'
-            : `Telecharger tout (${photos.length})`}
-        </button>
-        <button
-          type="button"
-          onClick={downloadSelection}
-          disabled={selectedKeys.length === 0 || downloading}
-          className="rounded-full bg-stone-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {downloading
-            ? 'Telechargement...'
-            : `Telecharger la selection${selectedKeys.length > 0 ? ` (${selectedKeys.length})` : ''}`}
-        </button>
+      <div className="relative mb-6 flex flex-wrap items-center gap-3 overflow-hidden rounded-[2rem] border border-stone-200 bg-white p-4 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.25)]">
+        <WeddingRsvpCardBackground />
+        <div className="relative z-10 flex flex-wrap items-center gap-3">
+          <span className="text-sm font-medium text-stone-700">
+            {selectedKeys.length} fichier(s) selectionne(s) sur {photos.length}
+          </span>
+          <button
+            type="button"
+            onClick={selectAll}
+            className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-950"
+          >
+            Tout selectionner
+          </button>
+          <button
+            type="button"
+            onClick={clearSelection}
+            disabled={selectedKeys.length === 0}
+            className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-950 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Effacer
+          </button>
+          <button
+            type="button"
+            onClick={downloadAll}
+            disabled={photos.length === 0 || downloading}
+            className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-950 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {downloading
+              ? 'Telechargement...'
+              : `Telecharger tout (${photos.length})`}
+          </button>
+          <button
+            type="button"
+            onClick={downloadSelection}
+            disabled={selectedKeys.length === 0 || downloading}
+            className="rounded-full bg-stone-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {downloading
+              ? 'Telechargement...'
+              : `Telecharger la selection${selectedKeys.length > 0 ? ` (${selectedKeys.length})` : ''}`}
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

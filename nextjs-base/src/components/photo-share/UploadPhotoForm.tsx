@@ -2,10 +2,6 @@
 
 import { FormEvent, useState } from 'react'
 
-type UploadPhotoFormProps = {
-  requireModeration: boolean
-}
-
 type SubmitState = {
   type: 'idle' | 'success' | 'error'
   message?: string
@@ -105,7 +101,7 @@ async function uploadMediaToBunny(
   }
 }
 
-export function UploadPhotoForm({ requireModeration }: UploadPhotoFormProps) {
+export function UploadPhotoForm() {
   const [submitting, setSubmitting] = useState(false)
   const [state, setState] = useState<SubmitState>({ type: 'idle' })
   const [uploadPhase, setUploadPhase] = useState<UploadPhase>('idle')
@@ -256,13 +252,12 @@ export function UploadPhotoForm({ requireModeration }: UploadPhotoFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <label className="grid gap-2 text-sm font-medium text-stone-700">
-        Ton nom
         <input
           name="authorName"
           required
           maxLength={80}
-          className="rounded-2xl border border-stone-300 bg-white px-4 py-3 text-base text-stone-900 outline-none transition focus:border-stone-500"
-          placeholder="Ex: Robert"
+          className="w-full min-w-0 rounded-2xl border border-stone-300 bg-white px-4 py-3 text-base text-stone-900 outline-none transition focus:border-stone-500"
+          placeholder="Ton nom"
         />
       </label>
 
@@ -274,19 +269,13 @@ export function UploadPhotoForm({ requireModeration }: UploadPhotoFormProps) {
           accept="image/*,video/mp4,video/quicktime,video/webm"
           multiple
           required
-          className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-5 text-sm text-stone-700"
+          className="block w-full min-w-0 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-5 text-sm text-stone-700 file:mr-3 file:mb-2 file:rounded-full file:border-0 file:bg-stone-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white sm:file:mb-0"
         />
       </label>
 
-      <div className="rounded-3xl bg-amber-50 p-4 text-sm text-amber-900">
-        {requireModeration
-          ? "Les dépôts sont modérés. Les médias resteront privés jusqu'à validation."
-          : 'Les dépôts valides sont publiés automatiquement après envoi.'}
-      </div>
-
       {submitting ? (
         <div className="space-y-2 rounded-3xl border border-stone-200 bg-stone-50 p-4">
-          <div className="flex items-center justify-between text-sm text-stone-700">
+          <div className="flex flex-col gap-1 text-sm text-stone-700 sm:flex-row sm:items-center sm:justify-between">
             <span>
               {uploadPhase === 'publishing'
                 ? 'Publication en cours...'
@@ -323,7 +312,7 @@ export function UploadPhotoForm({ requireModeration }: UploadPhotoFormProps) {
       <button
         type="submit"
         disabled={submitting}
-        className="inline-flex min-h-12 items-center justify-center rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
         {submitting ? 'Envoi en cours...' : 'Envoyer'}
       </button>

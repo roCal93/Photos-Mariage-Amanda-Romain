@@ -687,11 +687,17 @@ export interface ApiPhotoPhoto extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    image: Schema.Attribute.Media<'images' | 'videos'> &
-      Schema.Attribute.Required;
+    externalHeight: Schema.Attribute.Integer;
+    externalMime: Schema.Attribute.String;
+    externalUrl: Schema.Attribute.String;
+    externalWidth: Schema.Attribute.Integer;
+    image: Schema.Attribute.Media<'images' | 'videos'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::photo.photo'> &
       Schema.Attribute.Private;
+    mediaType: Schema.Attribute.Enumeration<['image', 'video']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'image'>;
     moderationStatus: Schema.Attribute.Enumeration<
       ['pending', 'approved', 'rejected']
     > &

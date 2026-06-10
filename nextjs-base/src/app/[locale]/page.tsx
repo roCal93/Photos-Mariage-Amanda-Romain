@@ -5,6 +5,7 @@ import { getHreflangAlternates } from '@/lib/hreflang'
 import { Layout } from '@/components/layout'
 import { Hero } from '@/components/sections/Hero'
 import { SectionGeneric } from '@/components/sections/SectionGeneric'
+import { WeddingRsvpBackground } from '@/components/photo-share/WeddingRsvpBackground'
 import { PageCollectionResponse, StrapiBlock } from '@/types/strapi'
 import { DynamicBlock } from '@/types/custom'
 import Link from 'next/link'
@@ -247,25 +248,28 @@ export default async function HomeLocale({
 
     return (
       <Layout locale={locale}>
-        <section className="flex min-h-screen items-center justify-center bg-[linear-gradient(145deg,#f5efe6_0%,#eef6ff_52%,#d6e7ff_100%)] px-6 py-16">
-          <div className="flex w-full max-w-3xl flex-col items-center text-center">
-            <h1 className="max-w-3xl text-5xl font-semibold tracking-tight text-stone-950 md:text-7xl">
-              Photos Mariage Amanda & Romain
-            </h1>
+        <section className="relative min-h-screen overflow-hidden">
+          <WeddingRsvpBackground />
+          <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10 md:px-8 md:py-14">
+            <div className="flex min-h-[15rem] w-full max-w-4xl flex-col items-center justify-between text-center md:min-h-[18rem]">
+              <h1 className="text-4xl font-semibold tracking-tight text-stone-950 md:text-6xl">
+                Photos Mariage Amanda & Romain
+              </h1>
 
-            <div className="mt-10 flex flex-wrap justify-center gap-4">
-              <Link
-                href={`/${locale}/photos`}
-                className="inline-flex min-h-12 items-center justify-center rounded-full bg-stone-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-800"
-              >
-                Galerie
-              </Link>
-              <Link
-                href={uploadHref}
-                className="inline-flex min-h-12 items-center justify-center rounded-full border border-stone-300 bg-white px-6 py-3 text-sm font-semibold text-stone-900 transition hover:border-stone-900"
-              >
-                Télécharger
-              </Link>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <Link
+                  href={`/${locale}/photos`}
+                  className="inline-flex min-h-12 items-center justify-center rounded-full bg-stone-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-800"
+                >
+                  Galerie
+                </Link>
+                <Link
+                  href={uploadHref}
+                  className="inline-flex min-h-12 items-center justify-center rounded-full border border-stone-300 bg-white px-6 py-3 text-sm font-semibold text-stone-900 transition hover:border-stone-900"
+                >
+                  Télécharger
+                </Link>
+              </div>
             </div>
           </div>
         </section>
