@@ -13,6 +13,7 @@ type SubmitState = {
 
 const MAX_IMAGE_SIZE_BYTES = 30 * 1024 * 1024
 const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024
+const CLOUDINARY_MAX_BYTES = 9 * 1024 * 1024 // 9 Mo pour rester sous la limite Cloudinary
 
 type CloudinaryUploadResponse = {
   secure_url: string
@@ -26,6 +27,43 @@ type CloudinaryUploadResponse = {
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
 const CLOUDINARY_UPLOAD_PRESET =
   process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+
+async function compressImage(file: File, maxBytes: number): Promise<File> {
+  if (file.size <= maxBytes) return file
+
+  const bitmap = await createImageBitmap(file, {
+    imageOrientation: 'from-image',
+  })
+  const canvas = document.createElement('canvas')
+  canvas.width = bitmap.width
+  canvas.height = bitmap.height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return file
+  ctx.drawImage(bitmap, 0, 0)
+  bitmap.close()
+
+  for (const quality of [0.92, 0.85, 0.75, 0.6]) {
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/jpeg', quality)
+    )
+    if (blob && blob.size <= maxBytes) {
+      return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', {
+        type: 'image/jpeg',
+        lastModified: file.lastModified,
+      })
+    }
+  }
+
+  // Dernier recours : qualité minimale
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, 'image/jpeg', 0.2)
+  )
+  if (!blob) return file
+  return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', {
+    type: 'image/jpeg',
+    lastModified: file.lastModified,
+  })
+}
 
 async function uploadVideoToCloudinary(file: File) {
   if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
@@ -74,8 +112,11 @@ async function uploadImageToCloudinary(file: File) {
     throw new Error('Cloudinary non configure sur le front.')
   }
 
+  // Compresser l'image si elle dépasse la limite Cloudinary
+  const compressedFile = await compressImage(file, CLOUDINARY_MAX_BYTES)
+
   const cloudinaryBody = new FormData()
-  cloudinaryBody.append('file', file)
+  cloudinaryBody.append('file', compressedFile)
   cloudinaryBody.append('upload_preset', CLOUDINARY_UPLOAD_PRESET)
   cloudinaryBody.append('resource_type', 'image')
 
