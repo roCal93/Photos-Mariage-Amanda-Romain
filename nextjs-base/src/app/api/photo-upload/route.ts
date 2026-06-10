@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit, getClientIpFromHeaders } from '@/lib/rate-limit'
 
-const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL
+const STRAPI_URL = process.env.STRAPI_URL || process.env.NEXT_PUBLIC_STRAPI_URL
 const STRAPI_WRITE_API_TOKEN =
   process.env.STRAPI_WRITE_API_TOKEN || process.env.STRAPI_API_TOKEN
 
@@ -217,7 +217,10 @@ export async function POST(request: NextRequest) {
       })
 
       if (!uploadResponse.ok) {
-        throw new Error('Upload media impossible pour le moment.')
+        const upstreamBody = await uploadResponse.text().catch(() => '')
+        throw new Error(
+          `Upload media impossible (${uploadResponse.status})${upstreamBody ? `: ${upstreamBody}` : ''}`
+        )
       }
 
       const uploadedItems =
