@@ -57,15 +57,10 @@ export default async function RootLayout({
   children: React.ReactNode
 }>) {
   let locale = defaultLocale
-  let cookieConsent: 'accepted' | 'rejected' | undefined
 
   try {
     const cookieStore = await cookies()
     const cookieLocale = cookieStore.get('locale')?.value
-    const consentValue = cookieStore.get('cookie_consent')?.value
-    if (consentValue === 'accepted' || consentValue === 'rejected') {
-      cookieConsent = consentValue
-    }
     if (cookieLocale === 'fr' || cookieLocale === 'en') {
       locale = cookieLocale
     } else {
@@ -77,13 +72,6 @@ export default async function RootLayout({
       const cookieHeader = (await headers()).get('cookie') ?? ''
       const match = cookieHeader.match(/(?:^|; )locale=([^;]+)/)
       const parsedLocale = match ? decodeURIComponent(match[1]) : defaultLocale
-      const consentMatch = cookieHeader.match(/(?:^|; )cookie_consent=([^;]+)/)
-      const parsedConsent = consentMatch
-        ? decodeURIComponent(consentMatch[1])
-        : undefined
-      if (parsedConsent === 'accepted' || parsedConsent === 'rejected') {
-        cookieConsent = parsedConsent
-      }
       locale =
         parsedLocale === 'fr' || parsedLocale === 'en'
           ? parsedLocale

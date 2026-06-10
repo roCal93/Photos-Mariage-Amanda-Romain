@@ -56,10 +56,7 @@ const nextConfig: NextConfig = {
 
   // Autoriser l'admin Strapi à intégrer le site en iframe pour la Preview
   async headers() {
-    const strapiOrigin =
-      process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337'
     const siteOrigin = getSiteOrigin()
-    const normalizedStrapiOrigin = normalizeOrigin(strapiOrigin) || strapiOrigin
     const isProd = process.env.NODE_ENV === 'production'
 
     // Note: Content-Security-Policy (avec nonce par requête) est géré dans middleware.ts

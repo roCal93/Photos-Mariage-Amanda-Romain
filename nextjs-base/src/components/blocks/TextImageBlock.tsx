@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { motion, useReducedMotion } from 'framer-motion'
@@ -34,11 +34,22 @@ const TextImageBlock = ({
   const [activeIndex, setActiveIndex] = useState(0)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  useEffect(() => {
-    if (activeIndex >= gallery.length) {
-      setActiveIndex(0)
-    }
+  const safeActiveIndex = useMemo(() => {
+    if (gallery.length === 0) return 0
+    return activeIndex >= gallery.length ? 0 : activeIndex
   }, [activeIndex, gallery.length])
+
+  const goToPrevious = useCallback(() => {
+    setActiveIndex((currentIndex) =>
+      currentIndex === 0 ? gallery.length - 1 : currentIndex - 1
+    )
+  }, [gallery.length])
+
+  const goToNext = useCallback(() => {
+    setActiveIndex((currentIndex) =>
+      currentIndex === gallery.length - 1 ? 0 : currentIndex + 1
+    )
+  }, [gallery.length])
 
   useEffect(() => {
     if (!isModalOpen) {
@@ -68,7 +79,7 @@ const TextImageBlock = ({
       window.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = ''
     }
-  }, [isModalOpen])
+  }, [isModalOpen, gallery.length, goToNext, goToPrevious])
 
   const imageSizeClasses = {
     small: 'md:w-1/3',
@@ -77,9 +88,12 @@ const TextImageBlock = ({
   }
 
   const roundedImageSizeClasses = {
-    small: 'w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 lg:w-[468px] lg:h-[468px]',
-    medium: 'w-80 h-80 sm:w-96 sm:h-96 md:w-[468px] md:h-[468px] lg:w-[600px] lg:h-[600px]',
-    large: 'w-96 h-96 sm:w-[468px] sm:h-[468px] md:w-[600px] md:h-[600px] lg:w-[800px] lg:h-[800px]',
+    small:
+      'w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 lg:w-[468px] lg:h-[468px]',
+    medium:
+      'w-80 h-80 sm:w-96 sm:h-96 md:w-[468px] md:h-[468px] lg:w-[600px] lg:h-[600px]',
+    large:
+      'w-96 h-96 sm:w-[468px] sm:h-[468px] md:w-[600px] md:h-[600px] lg:w-[800px] lg:h-[800px]',
   }
 
   const alignmentClasses = {
@@ -103,19 +117,7 @@ const TextImageBlock = ({
       : imageSrc
   }
 
-  const goToPrevious = () => {
-    setActiveIndex((currentIndex) =>
-      currentIndex === 0 ? gallery.length - 1 : currentIndex - 1
-    )
-  }
-
-  const goToNext = () => {
-    setActiveIndex((currentIndex) =>
-      currentIndex === gallery.length - 1 ? 0 : currentIndex + 1
-    )
-  }
-
-  const currentImage = gallery[activeIndex]
+  const currentImage = gallery[safeActiveIndex]
   const currentImageCaption = currentImage?.caption?.trim()
   const currentImageSrc = currentImage ? resolveImageSrc(currentImage) : null
   const modal =
@@ -162,7 +164,9 @@ const TextImageBlock = ({
               ) : null}
               <Image
                 src={currentImageSrc || '/placeholder.jpg'}
-                alt={currentImage.alternativeText || `Image ${activeIndex + 1}`}
+                alt={
+                  currentImage.alternativeText || `Image ${safeActiveIndex + 1}`
+                }
                 width={currentImage.width || 1600}
                 height={currentImage.height || 1200}
                 className="max-h-[85vh] w-auto max-w-full rounded-2xl object-contain"
@@ -191,7 +195,11 @@ const TextImageBlock = ({
       initial={shouldReduce ? {} : { opacity: 0, x: 60 }}
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true, amount: 0.35 }}
-      transition={shouldReduce ? { duration: 0 } : { duration: 0.7, delay: 0.2, ease: 'easeOut' }}
+      transition={
+        shouldReduce
+          ? { duration: 0 }
+          : { duration: 0.7, delay: 0.2, ease: 'easeOut' }
+      }
     >
       <div className="relative">
         <button
@@ -202,9 +210,9 @@ const TextImageBlock = ({
         >
           <Image
             src={currentImageSrc || '/placeholder.jpg'}
-            alt={currentImage.alternativeText || `Image ${activeIndex + 1}`}
-            width={roundedImage ? 800 : (currentImage.width || 800)}
-            height={roundedImage ? 800 : (currentImage.height || 600)}
+            alt={currentImage.alternativeText || `Image ${safeActiveIndex + 1}`}
+            width={roundedImage ? 800 : currentImage.width || 800}
+            height={roundedImage ? 800 : currentImage.height || 600}
             className={`${roundedImage ? 'w-full h-full object-cover rounded-full' : 'w-full h-auto object-cover rounded-lg'}`}
             sizes="(max-width: 768px) 100vw, 50vw"
             priority={priority && activeIndex === 0}
@@ -251,7 +259,9 @@ const TextImageBlock = ({
       initial={shouldReduce ? {} : { opacity: 0, y: 40 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.35 }}
-      transition={shouldReduce ? { duration: 0 } : { duration: 0.6, ease: 'easeOut' }}
+      transition={
+        shouldReduce ? { duration: 0 } : { duration: 0.6, ease: 'easeOut' }
+      }
     >
       {renderStrapiBlocks(content, {
         textAlignmentClass: textAlignmentClasses[textAlignment],
@@ -262,7 +272,9 @@ const TextImageBlock = ({
 
   return (
     <>
-      <div className={`flex flex-col md:flex-row gap-8 my-8 ${alignmentClasses[verticalAlignment]}`}>
+      <div
+        className={`flex flex-col md:flex-row gap-8 my-8 ${alignmentClasses[verticalAlignment]}`}
+      >
         {imagePosition === 'left' ? (
           <>
             {imageElement}
