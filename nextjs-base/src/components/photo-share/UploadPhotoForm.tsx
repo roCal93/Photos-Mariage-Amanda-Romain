@@ -288,7 +288,7 @@ export function UploadPhotoForm({ requireModeration }: UploadPhotoFormProps) {
           required
           maxLength={80}
           className="rounded-2xl border border-stone-300 bg-white px-4 py-3 text-base text-stone-900 outline-none transition focus:border-stone-500"
-          placeholder="Ex: Romain"
+          placeholder="Ex: Robert"
         />
       </label>
 

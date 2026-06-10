@@ -250,7 +250,7 @@ export default async function HomeLocale({
         <section className="flex min-h-screen items-center justify-center bg-[linear-gradient(145deg,#f5efe6_0%,#eef6ff_52%,#d6e7ff_100%)] px-6 py-16">
           <div className="flex w-full max-w-3xl flex-col items-center text-center">
             <h1 className="max-w-3xl text-5xl font-semibold tracking-tight text-stone-950 md:text-7xl">
-              Photo Share
+              Photos Mariage Amanda & Romain
             </h1>
 
             <div className="mt-10 flex flex-wrap justify-center gap-4">
@@ -258,13 +258,13 @@ export default async function HomeLocale({
                 href={`/${locale}/photos`}
                 className="inline-flex min-h-12 items-center justify-center rounded-full bg-stone-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-800"
               >
-                Gallery
+                Galerie
               </Link>
               <Link
                 href={uploadHref}
                 className="inline-flex min-h-12 items-center justify-center rounded-full border border-stone-300 bg-white px-6 py-3 text-sm font-semibold text-stone-900 transition hover:border-stone-900"
               >
-                Upload
+                Télécharger
               </Link>
             </div>
           </div>

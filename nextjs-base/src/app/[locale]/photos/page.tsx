@@ -69,15 +69,15 @@ export default async function PhotosPage({
           href={`/${locale}`}
           className="mb-6 inline-flex items-center rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-950"
         >
-          Retour a l&apos;accueil
+          Retour à l&apos;accueil
         </Link>
         <h1 className="mb-8 text-4xl font-semibold tracking-tight text-stone-950 md:mb-10 md:text-6xl">
-          Gallerie
+          Galerie
         </h1>
 
         {response.data.length === 0 ? (
           <div className="rounded-[2rem] border border-dashed border-stone-300 bg-stone-50 p-10 text-center text-stone-600">
-            Aucun media publie pour le moment.
+            Aucun média publié pour le moment.
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

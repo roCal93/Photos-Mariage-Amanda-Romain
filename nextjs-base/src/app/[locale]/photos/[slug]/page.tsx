@@ -42,7 +42,7 @@ export async function generateMetadata({
 
   return {
     title: photo.title,
-    description: `Media partage par ${photo.authorName}`,
+    description: `Média partagé par ${photo.authorName}`,
     openGraph: {
       images:
         getMediaUrl(photo) && !isVideo(getMediaMime(photo))
@@ -82,7 +82,7 @@ export default async function PhotoDetailPage({
             href={`/${locale}/photos`}
             className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur transition hover:border-white/40 hover:bg-white/15"
           >
-            Retour a la gallerie
+            Retour à la galerie
           </Link>
         </div>
 
@@ -92,7 +92,7 @@ export default async function PhotoDetailPage({
               <Link
                 href={`/${locale}/photos/${previousItem.slug}`}
                 className="absolute left-4 top-1/2 z-10 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/25 text-3xl font-light text-white backdrop-blur transition hover:scale-105 hover:border-white/60 hover:bg-black/40 md:left-8"
-                aria-label="Media precedent"
+                aria-label="Média précédent"
               >
                 ‹
               </Link>
@@ -102,7 +102,7 @@ export default async function PhotoDetailPage({
               <Link
                 href={`/${locale}/photos/${nextItem.slug}`}
                 className="absolute right-4 top-1/2 z-10 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/25 text-3xl font-light text-white backdrop-blur transition hover:scale-105 hover:border-white/60 hover:bg-black/40 md:right-8"
-                aria-label="Media suivant"
+                aria-label="Média suivant"
               >
                 ›
               </Link>

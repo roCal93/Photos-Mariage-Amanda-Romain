@@ -29,18 +29,18 @@ export default async function UploadPage({
               href={`/${locale}`}
               className="inline-flex items-center rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-950"
             >
-              Retour a l&apos;accueil
+              Retour à l&apos;accueil
             </Link>
             <p className="mt-4 text-sm font-semibold uppercase tracking-[0.24em] text-stone-500">
-              Upload
+              Formulaire de téléchargement
             </p>
             <h1 className="mt-4 text-4xl font-semibold tracking-tight text-stone-950">
-              Envoyer une ou plusieurs photos.
+              Envoyer une ou plusieurs médias.
             </h1>
 
             {!hasServiceToken ? (
               <div className="mt-8 rounded-[2rem] border border-amber-200 bg-amber-50 p-6 text-amber-950">
-                <p className="text-lg font-semibold">Upload non configure</p>
+                <p className="text-lg font-semibold">Service non configuré</p>
                 <p className="mt-2 text-sm leading-6">
                   Le formulaire ne peut pas fonctionner tant que
                   STRAPI_WRITE_API_TOKEN ou STRAPI_API_TOKEN reste en valeur
