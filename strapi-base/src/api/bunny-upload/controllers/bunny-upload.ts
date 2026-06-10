@@ -9,6 +9,8 @@ type MultipartFile = {
 const BUNNY_STORAGE_ZONE = process.env.BUNNY_STORAGE_ZONE
 const BUNNY_API_KEY = process.env.BUNNY_API_KEY
 const BUNNY_CDN_URL = process.env.BUNNY_CDN_URL
+const BUNNY_STORAGE_ENDPOINT =
+  process.env.BUNNY_STORAGE_ENDPOINT || 'https://storage.bunnycdn.com'
 
 function getUploadedFile(files: unknown): MultipartFile | null {
   if (!files || typeof files !== 'object') return null
@@ -23,49 +25,68 @@ function getUploadedFile(files: unknown): MultipartFile | null {
 
 export default {
   async upload(ctx: any) {
-    const file = getUploadedFile(ctx.request.files)
-    const authorName = String(ctx.request.body?.authorName || '').trim()
+    try {
+      const file = getUploadedFile(ctx.request.files)
+      const authorName = String(ctx.request.body?.authorName || '').trim()
 
-    if (!file || !authorName) {
-      return ctx.badRequest('Fichier ou nom manquant.')
-    }
+      if (!file || !authorName) {
+        ctx.status = 400
+        ctx.body = { error: 'Fichier ou nom manquant.' }
+        return
+      }
 
-    if (!BUNNY_STORAGE_ZONE || !BUNNY_API_KEY || !BUNNY_CDN_URL) {
-      return ctx.internalServerError('Configuration Bunny.net manquante.')
-    }
+      if (!BUNNY_STORAGE_ZONE || !BUNNY_API_KEY || !BUNNY_CDN_URL) {
+        ctx.status = 500
+        ctx.body = { error: 'Configuration Bunny.net manquante.' }
+        return
+      }
 
-    const originalFileName = file.originalFilename || 'media'
-    const fileTitle = originalFileName.replace(/\.[^.]+$/, '').trim() || 'media'
-    const ext = originalFileName.split('.').pop() || 'jpg'
-    const mimeType = file.mimetype || 'application/octet-stream'
-    const folder = mimeType.startsWith('video/') ? 'videos' : 'images'
-    const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const originalFileName = file.originalFilename || 'media'
+      const fileTitle = originalFileName.replace(/\.[^.]+$/, '').trim() || 'media'
+      const ext = originalFileName.split('.').pop() || 'jpg'
+      const mimeType = file.mimetype || 'application/octet-stream'
+      const folder = mimeType.startsWith('video/') ? 'videos' : 'images'
+      const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
-    const fileBuffer = await readFile(file.filepath)
-    const response = await fetch(
-      `https://storage.bunnycdn.com/${BUNNY_STORAGE_ZONE}/${path}`,
-      {
+      const fileBuffer = await readFile(file.filepath)
+      const uploadUrl = `${BUNNY_STORAGE_ENDPOINT.replace(/\/$/, '')}/${BUNNY_STORAGE_ZONE}/${path}`
+      const response = await fetch(uploadUrl, {
         method: 'PUT',
         headers: {
           AccessKey: BUNNY_API_KEY,
           'Content-Type': mimeType,
         },
         body: fileBuffer,
-      }
-    )
-
-    if (!response.ok) {
-      strapi.log.error('Bunny upload failed', {
-        status: response.status,
-        statusText: response.statusText,
       })
-      return ctx.internalServerError('Echec upload Bunny.net.')
-    }
 
-    ctx.body = {
-      url: `${BUNNY_CDN_URL}/${path}`,
-      mime: mimeType,
-      title: fileTitle,
+      if (!response.ok) {
+        const upstreamBody = await response.text().catch(() => '')
+        const errorMessage = `Echec upload Bunny.net (${response.status} ${response.statusText})${upstreamBody ? `: ${upstreamBody.slice(0, 300)}` : ''}`
+
+        strapi.log.error(errorMessage, {
+          uploadUrl,
+          storageZone: BUNNY_STORAGE_ZONE,
+        })
+
+        ctx.status = 502
+        ctx.body = { error: errorMessage }
+        return
+      }
+
+      ctx.body = {
+        url: `${BUNNY_CDN_URL}/${path}`,
+        mime: mimeType,
+        title: fileTitle,
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Erreur inattendue pendant l\'upload Bunny.net.'
+
+      strapi.log.error(message)
+      ctx.status = 500
+      ctx.body = { error: message }
     }
   },
 }

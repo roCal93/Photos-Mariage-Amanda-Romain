@@ -21,7 +21,16 @@ type BunnyUploadResponse = {
   title?: string
   width?: number
   height?: number
-  error?: string
+  error?: string | { message?: string }
+}
+
+function getErrorMessage(error: BunnyUploadResponse['error']) {
+  if (typeof error === 'string') return error
+  if (error && typeof error === 'object' && typeof error.message === 'string') {
+    return error.message
+  }
+
+  return null
 }
 
 async function uploadMediaToBunny(file: File, authorName: string) {
@@ -50,7 +59,7 @@ async function uploadMediaToBunny(file: File, authorName: string) {
     typeof json.url !== 'string' ||
     typeof json.mime !== 'string'
   ) {
-    const message = json?.error || 'Echec upload Bunny.net.'
+    const message = getErrorMessage(json?.error) || 'Echec upload Bunny.net.'
     throw new Error(message)
   }
 
