@@ -1,39 +1,7 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import { Layout } from '@/components/layout'
+import { PhotoGalleryGrid } from '@/components/photo-share/PhotoGalleryGrid'
 import { getPublicPhotos } from '@/lib/photo-share'
-
-function isVideo(mime?: string) {
-  return typeof mime === 'string' && mime.startsWith('video/')
-}
-
-function getMediaMime(photo: {
-  mediaType?: 'image' | 'video'
-  externalMime?: string | null
-  image?: { mime?: string | null } | null
-}) {
-  if (photo.mediaType === 'video') return photo.externalMime || 'video/mp4'
-  return photo.image?.mime || photo.externalMime || undefined
-}
-
-function getMediaUrl(photo: {
-  mediaType?: 'image' | 'video'
-  externalUrl?: string | null
-  image?: { url?: string | null } | null
-}) {
-  if (photo.mediaType === 'video') return photo.externalUrl || ''
-  return photo.image?.url || photo.externalUrl || ''
-}
-
-function getCardSpanClass(width?: number, height?: number) {
-  if (!width || !height) {
-    return 'sm:col-span-1 xl:col-span-1'
-  }
-
-  return width > height
-    ? 'sm:col-span-2 xl:col-span-2'
-    : 'sm:col-span-1 xl:col-span-1'
-}
 
 export const dynamic = 'force-dynamic'
 
@@ -80,60 +48,7 @@ export default async function PhotosPage({
             Aucun média publié pour le moment.
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {response.data.map((photo) => (
-              <div
-                key={photo.documentId}
-                className={getCardSpanClass(
-                  photo.mediaType === 'video'
-                    ? (photo.externalWidth ?? undefined)
-                    : (photo.image?.width ?? undefined),
-                  photo.mediaType === 'video'
-                    ? (photo.externalHeight ?? undefined)
-                    : (photo.image?.height ?? undefined)
-                )}
-              >
-                <Link
-                  href={`/fr/photos/${photo.slug}`}
-                  className="group block overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-[0_24px_80px_-48px_rgba(15,23,42,0.45)] transition hover:-translate-y-1 hover:shadow-[0_32px_90px_-44px_rgba(15,23,42,0.5)]"
-                >
-                  <div className="relative h-80 bg-stone-100 md:h-[26rem] xl:h-[30rem]">
-                    {isVideo(getMediaMime(photo)) ? (
-                      <>
-                        <video
-                          src={getMediaUrl(photo)}
-                          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-                          muted
-                          playsInline
-                          preload="metadata"
-                        />
-                        <span className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-                          <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-black/40 text-2xl text-white backdrop-blur-sm">
-                            ▶
-                          </span>
-                        </span>
-                      </>
-                    ) : (
-                      <Image
-                        src={getMediaUrl(photo)}
-                        alt={photo.image?.alternativeText || photo.title}
-                        fill
-                        className="object-cover transition duration-500 group-hover:scale-[1.03]"
-                        style={{ ['imageOrientation' as never]: 'from-image' }}
-                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                      />
-                    )}
-                  </div>
-                </Link>
-
-                <div className="px-1 pt-3">
-                  <p className="text-sm italic text-stone-500">
-                    {photo.authorName}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <PhotoGalleryGrid locale={locale} photos={response.data} />
         )}
       </section>
     </Layout>
