@@ -9,7 +9,7 @@
     "deploy": "strapi deploy",
     "dev": "bash scripts/backup-strapi-db.sh && strapi develop",
     "develop": "bash scripts/backup-strapi-db.sh && strapi develop",
-    "start": "strapi start",
+    "start": "mkdir -p public/uploads && strapi start",
     "strapi": "strapi",
     "generate:types": "node scripts/generate-types.js",
     "sync:types": "node scripts/sync-types.js",
