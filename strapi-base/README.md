@@ -102,16 +102,14 @@ JWT_SECRET=votre-secret
 # API Tokens (optionnel)
 API_TOKEN_SALT=votre-salt
 
-# Cloudinary - required for uploads in production (preferred)
-# CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
-# or (less recommended):
-# CLOUDINARY_NAME=your_cloud
-# CLOUDINARY_KEY=your_key
-# CLOUDINARY_SECRET=your_secret
+# Bunny CDN for media published through the Next.js upload flow
+# BUNNY_CDN_URL=https://your-cdn.b-cdn.net
+# BUNNY_STORAGE_ZONE=your-storage-zone
+# BUNNY_API_KEY=your-storage-access-key
 ```
 
-### Vérifications manuelles (Cloudinary)
-Reportez-vous à `HAKUNA_MATAWEB_AGENCE/docs/cloudinary-setup.md` pour la checklist de vérification (upload test, CSP, image provider).
+### Vérifications manuelles (Bunny)
+Vérifiez que les variables Bunny sont présentes côté environnement et que les URLs CDN renvoyées par le front sont bien accessibles publiquement.
 
 ## Bonnes pratiques
 

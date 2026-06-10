@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  const fileTitle = file.name.replace(/\.[^.]+$/, '').trim() || 'media'
   const ext = file.name.split('.').pop() || 'jpg'
   const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
   const folder = file.type.startsWith('video/') ? 'videos' : 'images'
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
       method: 'PUT',
       headers: {
         AccessKey: BUNNY_API_KEY,
-        'Content-Type': file.type,
+        'Content-Type': file.type || 'application/octet-stream',
       },
       body: arrayBuffer,
     }
@@ -66,5 +67,12 @@ export async function POST(request: NextRequest) {
 
   const url = `${BUNNY_CDN_URL}/${path}`
 
-  return NextResponse.json({ url, mime: file.type }, { status: 200 })
+  return NextResponse.json(
+    {
+      url,
+      mime: file.type || 'application/octet-stream',
+      title: fileTitle,
+    },
+    { status: 200 }
+  )
 }

@@ -1,7 +1,7 @@
 export default [
-  // Append Cloudinary to any CSP header returned by Strapi (helps ensure admin loads remote images)
+  // Append Bunny CDN origins to any CSP header returned by Strapi.
   {
-    name: 'global::append-cloudinary-csp',
+    name: 'global::append-bunny-csp',
     config: {},
   },
   'strapi::logger',
@@ -53,15 +53,15 @@ export default [
             'connect-src': env('NODE_ENV') === 'production'
               ? ["'self'", 'https:']
               : ["'self'", 'https:', 'ws://localhost:5173', 'http://localhost:5173'],
-            // Allow images/media from Cloudinary in production
+            // Allow images/media from Bunny CDN in production
             'img-src': env('NODE_ENV') === 'production'
-              ? ["'self'", 'data:', 'https://res.cloudinary.com', 'https://market-assets.strapi.io']
-              : ["'self'", 'data:', 'blob:', 'http://localhost:5173', 'https://res.cloudinary.com', 'https://market-assets.strapi.io'],
+              ? ["'self'", 'data:', env('BUNNY_CDN_URL') || 'https://cdn.bunnycdn.com', 'https://market-assets.strapi.io']
+              : ["'self'", 'data:', 'blob:', 'http://localhost:5173', env('BUNNY_CDN_URL') || 'https://cdn.bunnycdn.com', 'https://market-assets.strapi.io'],
             'media-src': env('NODE_ENV') === 'production'
-              ? ["'self'", 'data:', 'https://res.cloudinary.com']
-              : ["'self'", 'data:', 'blob:', 'https://res.cloudinary.com'],
-            // Objects (PDFs embeds): allow Cloudinary
-            'object-src': ["'self'", 'https://res.cloudinary.com'],
+              ? ["'self'", 'data:', env('BUNNY_CDN_URL') || 'https://cdn.bunnycdn.com']
+              : ["'self'", 'data:', 'blob:', env('BUNNY_CDN_URL') || 'https://cdn.bunnycdn.com'],
+            // Objects (PDFs embeds): allow Bunny CDN
+            'object-src': ["'self'", env('BUNNY_CDN_URL') || 'https://cdn.bunnycdn.com'],
           },
         },
       };

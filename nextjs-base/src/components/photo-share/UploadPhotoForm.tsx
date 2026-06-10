@@ -13,140 +13,46 @@ type SubmitState = {
 
 const MAX_IMAGE_SIZE_BYTES = 30 * 1024 * 1024
 const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024
-const CLOUDINARY_MAX_BYTES = 9 * 1024 * 1024 // 9 Mo pour rester sous la limite Cloudinary
 
-type CloudinaryUploadResponse = {
-  secure_url: string
-  resource_type: 'image' | 'video' | 'raw'
+type BunnyUploadResponse = {
+  url?: string
+  mime?: string
+  title?: string
   width?: number
   height?: number
-  format?: string
-  original_filename?: string
+  error?: string
 }
 
-const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-const CLOUDINARY_UPLOAD_PRESET =
-  process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+async function uploadMediaToBunny(file: File, authorName: string) {
+  const bunnyBody = new FormData()
+  bunnyBody.append('file', file)
+  bunnyBody.append('authorName', authorName)
 
-async function compressImage(file: File, maxBytes: number): Promise<File> {
-  if (file.size <= maxBytes) return file
-
-  const bitmap = await createImageBitmap(file, {
-    imageOrientation: 'from-image',
+  const response = await fetch('/api/bunny-upload', {
+    method: 'POST',
+    body: bunnyBody,
   })
-  const canvas = document.createElement('canvas')
-  canvas.width = bitmap.width
-  canvas.height = bitmap.height
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return file
-  ctx.drawImage(bitmap, 0, 0)
-  bitmap.close()
 
-  for (const quality of [0.85, 0.75, 0.6, 0.45, 0.3]) {
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, 'image/jpeg', quality)
-    )
-    if (blob && blob.size <= maxBytes) {
-      return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', {
-        type: 'image/jpeg',
-        lastModified: file.lastModified,
-      })
-    }
-  }
+  const json = (await response
+    .json()
+    .catch(() => null)) as BunnyUploadResponse | null
 
-  // Dernier recours : qualité minimale
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, 'image/jpeg', 0.2)
-  )
-  if (!blob) return file
-  return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', {
-    type: 'image/jpeg',
-    lastModified: file.lastModified,
-  })
-}
-
-async function uploadVideoToCloudinary(file: File) {
-  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
-    throw new Error(
-      'Cloudinary non configure sur le front (NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME / NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET).'
-    )
-  }
-
-  const cloudinaryBody = new FormData()
-  cloudinaryBody.append('file', file)
-  cloudinaryBody.append('upload_preset', CLOUDINARY_UPLOAD_PRESET)
-  cloudinaryBody.append('resource_type', 'video')
-
-  const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`,
-    {
-      method: 'POST',
-      body: cloudinaryBody,
-    }
-  )
-
-  const json = (await response.json().catch(() => null)) as
-    | CloudinaryUploadResponse
-    | { error?: { message?: string } }
-    | null
-
-  if (!response.ok || !json || !('secure_url' in json)) {
-    const message =
-      json && 'error' in json
-        ? json.error?.message || 'Echec upload Cloudinary.'
-        : 'Echec upload Cloudinary.'
+  if (
+    !response.ok ||
+    !json ||
+    typeof json.url !== 'string' ||
+    typeof json.mime !== 'string'
+  ) {
+    const message = json?.error || 'Echec upload Bunny.net.'
     throw new Error(message)
   }
 
   return {
-    url: json.secure_url,
-    mime: `video/${json.format || 'mp4'}`,
+    url: json.url,
+    mime: json.mime,
+    title: json.title || file.name.replace(/\.[^.]+$/, ''),
     width: json.width,
     height: json.height,
-    title: json.original_filename || file.name.replace(/\.[^.]+$/, ''),
-  }
-}
-
-async function uploadImageToCloudinary(file: File) {
-  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
-    throw new Error('Cloudinary non configure sur le front.')
-  }
-
-  // Compresser l'image si elle dépasse la limite Cloudinary
-  const compressedFile = await compressImage(file, CLOUDINARY_MAX_BYTES)
-
-  const cloudinaryBody = new FormData()
-  cloudinaryBody.append('file', compressedFile)
-  cloudinaryBody.append('upload_preset', CLOUDINARY_UPLOAD_PRESET)
-  cloudinaryBody.append('resource_type', 'image')
-
-  const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-    {
-      method: 'POST',
-      body: cloudinaryBody,
-    }
-  )
-
-  const json = (await response.json().catch(() => null)) as
-    | CloudinaryUploadResponse
-    | { error?: { message?: string } }
-    | null
-
-  if (!response.ok || !json || !('secure_url' in json)) {
-    const message =
-      json && 'error' in json
-        ? json.error?.message || 'Echec upload Cloudinary.'
-        : 'Echec upload Cloudinary.'
-    throw new Error(message)
-  }
-
-  return {
-    url: json.secure_url,
-    mime: `image/${json.format || 'jpeg'}`,
-    width: json.width,
-    height: json.height,
-    title: json.original_filename || file.name.replace(/\.[^.]+$/, ''),
   }
 }
 
@@ -161,6 +67,7 @@ export function UploadPhotoForm({ requireModeration }: UploadPhotoFormProps) {
 
     const form = event.currentTarget
     const body = new FormData(form)
+    const authorName = (body.get('authorName') as string) || ''
     const rawFiles = body
       .getAll('files')
       .filter((entry): entry is File => entry instanceof File)
@@ -203,7 +110,7 @@ export function UploadPhotoForm({ requireModeration }: UploadPhotoFormProps) {
 
       if (imageFiles.length > 0) {
         const uploadedImages = await Promise.all(
-          imageFiles.map((file) => uploadImageToCloudinary(file))
+          imageFiles.map((file) => uploadMediaToBunny(file, authorName))
         )
 
         const imageResponse = await fetch('/api/photo-upload', {
@@ -236,7 +143,7 @@ export function UploadPhotoForm({ requireModeration }: UploadPhotoFormProps) {
 
       if (videoFiles.length > 0) {
         const uploadedVideos = await Promise.all(
-          videoFiles.map((file) => uploadVideoToCloudinary(file))
+          videoFiles.map((file) => uploadMediaToBunny(file, authorName))
         )
 
         const videoResponse = await fetch('/api/photo-upload', {

@@ -12,6 +12,17 @@ function normalizeOrigin(input: string): string | null {
   }
 }
 
+function getBunnyOrigins(): string[] {
+  const origins = new Set<string>()
+
+  const bunnyCdnOrigin = normalizeOrigin(process.env.BUNNY_CDN_URL || '')
+  if (bunnyCdnOrigin) origins.add(bunnyCdnOrigin)
+
+  origins.add('https://storage.bunnycdn.com')
+
+  return Array.from(origins)
+}
+
 /** Replicate the allowed-origins logic so frame-ancestors stays accurate. */
 function getAllowedFrameAncestors(): string[] {
   const allowedEnv =
@@ -54,16 +65,17 @@ function buildCsp(nonce: string): string {
   const normalizedStrapiOrigin = normalizeOrigin(strapiOrigin) || strapiOrigin
   const isProd = process.env.NODE_ENV === 'production'
   const frameAncestors = ["'self'", ...getAllowedFrameAncestors()].join(' ')
+  const bunnyOrigins = getBunnyOrigins().join(' ')
 
   const directives = [
     "default-src 'self';",
-    `img-src 'self' data: https://res.cloudinary.com ${normalizedStrapiOrigin};`,
-    `media-src 'self' data: blob: https://res.cloudinary.com ${normalizedStrapiOrigin};`,
+    `img-src 'self' data: ${bunnyOrigins} ${normalizedStrapiOrigin};`,
+    `media-src 'self' data: blob: ${bunnyOrigins} ${normalizedStrapiOrigin};`,
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isProd ? '' : " 'unsafe-eval'"};`,
     "style-src 'self' 'unsafe-inline';",
     "style-src-attr 'unsafe-inline';",
     "frame-src 'self' https://vercel.live;",
-    `connect-src 'self' ${normalizedStrapiOrigin} https://api.cloudinary.com https://res.cloudinary.com;`,
+    `connect-src 'self' ${normalizedStrapiOrigin} ${bunnyOrigins};`,
     "font-src 'self' data:;",
     "object-src 'none';",
     "base-uri 'self';",

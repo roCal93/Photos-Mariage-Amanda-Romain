@@ -16,6 +16,22 @@ function getSiteOrigin(): string {
   return normalizeOrigin(siteUrl) || 'http://localhost:3000'
 }
 
+function getRemotePatternFromUrl(input: string) {
+  try {
+    const url = new URL(input)
+    return {
+      protocol: url.protocol.replace(':', '') as 'http' | 'https',
+      hostname: url.hostname,
+      pathname: '/**',
+      ...(url.port ? { port: url.port } : {}),
+    }
+  } catch {
+    return null
+  }
+}
+
+const bunnyCdnPattern = getRemotePatternFromUrl(process.env.BUNNY_CDN_URL || '')
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -25,11 +41,7 @@ const nextConfig: NextConfig = {
         port: '1337',
         pathname: '/uploads/**',
       },
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-        pathname: '/**',
-      },
+      ...(bunnyCdnPattern ? [bunnyCdnPattern] : []),
       {
         protocol: 'https',
         hostname: 'traduction-amanda-production.up.railway.app',

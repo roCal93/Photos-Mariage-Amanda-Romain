@@ -5,7 +5,10 @@ export default () => {
     const headerName = 'Content-Security-Policy'
     let csp = ctx.response.get(headerName)
 
-    // Build allowed origins list from ALLOWED_ORIGINS or CLIENT_URL fallback
+    const bunnyCdn = process.env.BUNNY_CDN_URL || 'https://cdn.bunnycdn.com'
+    const bunnyStorage = 'https://storage.bunnycdn.com'
+
+    // Build allowed origins list from ALLOWED_ORIGINS or CLIENT_URL fallback.
     const allowedEnv = process.env.ALLOWED_ORIGINS || undefined
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000'
     const clientUrlsSet = new Set<string>()
@@ -36,53 +39,48 @@ export default () => {
 
     const origins = Array.from(clientUrlsSet)
 
-    // If no CSP header exists, set a safe default that includes Cloudinary and frame directives
     if (!csp) {
       ctx.set(
         headerName,
-        `default-src 'self'; img-src 'self' data: https://res.cloudinary.com https://market-assets.strapi.io; frame-src 'self' ${origins.join(' ')}; frame-ancestors 'self' ${origins.join(' ')}; script-src 'self'; style-src 'self' 'unsafe-inline'`
+        `default-src 'self'; img-src 'self' data: ${bunnyCdn} ${bunnyStorage} https://market-assets.strapi.io; media-src 'self' data: blob: ${bunnyCdn} ${bunnyStorage}; object-src 'self' ${bunnyCdn} ${bunnyStorage}; frame-src 'self' ${origins.join(' ')}; frame-ancestors 'self' ${origins.join(' ')}; script-src 'self'; style-src 'self' 'unsafe-inline'`
       )
       return
     }
 
-    // Helper: check if a CSP directive string already contains an exact host token
-    const hasCloudinary = (directive: string) =>
-      /(^|\s)https:\/\/res\.cloudinary\.com(\s|$)/.test(directive)
+    const hasBunny = (directive: string) =>
+      /(^|\s)https:\/\/(cdn\.bunnycdn\.com|storage\.bunnycdn\.com)(\s|$)/.test(
+        directive
+      ) || directive.includes(bunnyCdn)
 
-    // Ensure img-src contains Cloudinary
     let newCsp = csp
     if (newCsp.includes('img-src')) {
       newCsp = newCsp.replace(/img-src([^;]*)/, (match: string, group: string) => {
-        if (hasCloudinary(match)) return match
-        return `img-src${group} https://res.cloudinary.com`
+        if (hasBunny(match)) return match
+        return `img-src${group} ${bunnyCdn} ${bunnyStorage}`
       })
     } else {
-      newCsp = `${newCsp}; img-src 'self' data: https://res.cloudinary.com https://market-assets.strapi.io`
+      newCsp = `${newCsp}; img-src 'self' data: ${bunnyCdn} ${bunnyStorage} https://market-assets.strapi.io`
     }
 
-    // Ensure media-src contains Cloudinary (for videos)
     if (newCsp.includes('media-src')) {
       newCsp = newCsp.replace(/media-src([^;]*)/, (match: string, group: string) => {
-        if (hasCloudinary(match)) return match
-        return `media-src${group} https://res.cloudinary.com`
+        if (hasBunny(match)) return match
+        return `media-src${group} ${bunnyCdn} ${bunnyStorage}`
       })
     } else {
-      newCsp = `${newCsp}; media-src 'self' data: blob: https://res.cloudinary.com`
+      newCsp = `${newCsp}; media-src 'self' data: blob: ${bunnyCdn} ${bunnyStorage}`
     }
 
-    // Ensure object-src contains Cloudinary (for PDFs)
-    // If object-src is 'none', replace it entirely (can't combine 'none' with other sources)
     if (newCsp.includes('object-src')) {
       newCsp = newCsp.replace(/object-src([^;]*)/, (match: string, group: string) => {
-        if (hasCloudinary(match)) return match
-        // If 'none' is present, replace the entire directive
+        if (hasBunny(match)) return match
         if (match.includes("'none'")) {
-          return `object-src 'self' https://res.cloudinary.com`
+          return `object-src 'self' ${bunnyCdn} ${bunnyStorage}`
         }
-        return `object-src${group} https://res.cloudinary.com`
+        return `object-src${group} ${bunnyCdn} ${bunnyStorage}`
       })
     } else {
-      newCsp = `${newCsp}; object-src 'self' https://res.cloudinary.com`
+      newCsp = `${newCsp}; object-src 'self' ${bunnyCdn} ${bunnyStorage}`
     }
 
     ctx.set(headerName, newCsp)
