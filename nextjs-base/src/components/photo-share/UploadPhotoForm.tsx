@@ -13,6 +13,7 @@ type SubmitState = {
 
 const MAX_IMAGE_SIZE_BYTES = 30 * 1024 * 1024
 const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024
+const STRAPI_UPLOAD_URL = `${process.env.NEXT_PUBLIC_STRAPI_URL || ''}/api/bunny-upload`
 
 type BunnyUploadResponse = {
   url?: string
@@ -24,11 +25,17 @@ type BunnyUploadResponse = {
 }
 
 async function uploadMediaToBunny(file: File, authorName: string) {
+  if (!process.env.NEXT_PUBLIC_STRAPI_URL) {
+    throw new Error(
+      'NEXT_PUBLIC_STRAPI_URL manquant pour envoyer vers le backend.'
+    )
+  }
+
   const bunnyBody = new FormData()
   bunnyBody.append('file', file)
   bunnyBody.append('authorName', authorName)
 
-  const response = await fetch('/api/bunny-upload', {
+  const response = await fetch(STRAPI_UPLOAD_URL, {
     method: 'POST',
     body: bunnyBody,
   })
