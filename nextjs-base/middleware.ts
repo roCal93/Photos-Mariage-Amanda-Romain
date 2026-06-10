@@ -58,11 +58,12 @@ function buildCsp(nonce: string): string {
   const directives = [
     "default-src 'self';",
     `img-src 'self' data: https://res.cloudinary.com ${normalizedStrapiOrigin};`,
+    `media-src 'self' data: blob: https://res.cloudinary.com ${normalizedStrapiOrigin};`,
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isProd ? '' : " 'unsafe-eval'"};`,
     "style-src 'self' 'unsafe-inline';",
     "style-src-attr 'unsafe-inline';",
     "frame-src 'self' https://vercel.live;",
-    `connect-src 'self' ${normalizedStrapiOrigin};`,
+    `connect-src 'self' ${normalizedStrapiOrigin} https://api.cloudinary.com https://res.cloudinary.com;`,
     "font-src 'self' data:;",
     "object-src 'none';",
     "base-uri 'self';",
