@@ -13,36 +13,6 @@ import { notFound, redirect } from 'next/navigation'
 import { defaultLocale } from '@/lib/locales'
 import { isSupportedLocale } from '@/lib/supported-locales'
 
-type OpeningDay = {
-  dayLabel: string
-  isClosedAllDay?: boolean | null
-  firstPeriodOpenTime?: string | null
-  firstPeriodCloseTime?: string | null
-  secondPeriodOpenTime?: string | null
-  secondPeriodCloseTime?: string | null
-}
-
-const getSharedOpeningDays = (sections: unknown[]): OpeningDay[] => {
-  for (const section of sections) {
-    const blocks = (section as { blocks?: unknown[] }).blocks
-    if (!Array.isArray(blocks)) continue
-
-    for (const block of blocks) {
-      const component = (block as { __component?: string }).__component
-      const openingDays = (block as { openingDays?: unknown }).openingDays
-      if (
-        component === 'blocks.text-map-block' &&
-        Array.isArray(openingDays) &&
-        openingDays.length > 0
-      ) {
-        return openingDays as OpeningDay[]
-      }
-    }
-  }
-
-  return []
-}
-
 export const dynamic = 'force-dynamic'
 
 const fetchPageData = async (
@@ -71,7 +41,7 @@ const fetchPageData = async (
       'locale',
     ],
     populate:
-      'sections.blocks.cards.image,sections.blocks.image,sections.blocks.imageDesktop,sections.blocks.buttons.file,sections.blocks.items.images.image,sections.blocks.items.images.link,sections.blocks.examples,sections.blocks.workItems.image,sections.blocks.workItems.categories,sections.blocks.privacyPolicy,sections.blocks.markerImage,sections.blocks.openingDays,seoImage,localizations',
+      'sections.blocks.image,sections.blocks.imageDesktop,sections.blocks.buttons.file,sections.blocks.items.images.image,sections.blocks.items.images.link,sections.blocks.examples,sections.blocks.privacyPolicy,seoImage,localizations',
     locale,
     publicationState: isDraft ? 'preview' : 'live',
   })
@@ -101,8 +71,7 @@ const fetchPageDataFallback = async (slug: string, isDraft: boolean) => {
       'locale',
     ],
     populate:
-      'sections.blocks.cards.image,sections.blocks.image,sections.blocks.imageDesktop,sections.blocks.buttons.file,sections.blocks.items.images.image,sections.blocks.items.images.link,sections.blocks.examples,sections.blocks.workItems.image,sections.blocks.workItems.categories,sections.blocks.privacyPolicy,sections.blocks.markerImage,sections.blocks.openingDays,seoImage,localizations',
-    publicationState: isDraft ? 'preview' : 'live',
+      'sections.blocks.image,sections.blocks.imageDesktop,sections.blocks.buttons.file,sections.blocks.items.images.image,sections.blocks.items.images.link,sections.blocks.examples,sections.blocks.privacyPolicy,seoImage,localizations',
   })
 
   return fallbackRes
@@ -272,23 +241,6 @@ export default async function Page({
   const sections = (page.sections || []).sort(
     (a, b) => (a.order || 0) - (b.order || 0)
   )
-  let sharedOpeningDays = getSharedOpeningDays(sections)
-
-  if (sharedOpeningDays.length === 0) {
-    const homeRes = isDraft
-      ? await fetchPageData('home', locale, true)
-      : await getPageData('home', locale)
-    const homeSections = homeRes?.data?.[0]?.sections || []
-    sharedOpeningDays = getSharedOpeningDays(homeSections)
-
-    if (sharedOpeningDays.length === 0 && locale !== defaultLocale) {
-      const homeDefaultRes = isDraft
-        ? await fetchPageData('home', defaultLocale, true)
-        : await getPageData('home', defaultLocale)
-      const homeDefaultSections = homeDefaultRes?.data?.[0]?.sections || []
-      sharedOpeningDays = getSharedOpeningDays(homeDefaultSections)
-    }
-  }
 
   return (
     <Layout locale={locale}>
@@ -300,7 +252,6 @@ export default async function Page({
           identifier={section.identifier}
           title={section.hideTitle ? undefined : section.title}
           blocks={section.blocks as DynamicBlock[]}
-          sharedOpeningDays={sharedOpeningDays}
           containerWidth={normalizeContainerWidth(section.containerWidth)}
           spacingTop={
             section.spacingTop as

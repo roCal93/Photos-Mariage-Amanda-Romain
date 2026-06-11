@@ -96,14 +96,6 @@ export interface StrapiErrorResponse {
 // ============================================================================
 
 /**
- * Component: blocks.carousel-block
- */
-export interface CarouselBlock {
-  workItems?: (WorkItem & StrapiEntity)[]
-  scrollSpeed?: number
-}
-
-/**
  * Component: shared.button
  */
 export interface Button {
@@ -113,16 +105,6 @@ export interface Button {
   variant: string
   isExternal?: boolean
   icon?: string
-}
-
-/**
- * Component: shared.carousel-card
- */
-export interface CarouselCard {
-  frontTitle: string
-  frontContent?: StrapiBlock[]
-  backContent?: StrapiBlock[]
-  image?: StrapiMedia
 }
 
 /**
@@ -244,45 +226,3 @@ export interface Section {
 }
 export type SectionResponse = StrapiResponse<Section>
 export type SectionCollectionResponse = StrapiCollectionResponse<Section>
-
-/**
- * Work Category
- */
-export interface WorkCategory {
-  name: string
-  slug: string
-  description?: string
-  color?: string
-  icon?: StrapiMedia
-  work_items?: (WorkItem & StrapiEntity)[]
-  locale?: string
-  localizations?: (WorkCategory & StrapiEntity)[]
-}
-export type WorkCategoryResponse = StrapiResponse<WorkCategory>
-export type WorkCategoryCollectionResponse =
-  StrapiCollectionResponse<WorkCategory>
-
-/**
- * Work Item
- */
-export interface WorkItem {
-  title: string
-  slug: string
-  description?: StrapiBlock[]
-  shortDescription?: string
-  image: StrapiMedia
-  gallery?: StrapiMedia[]
-  categories?: (WorkCategory & StrapiEntity)[]
-  link?: string
-  client?: string
-  year?: number
-  technologies?: Record<string, unknown>
-  customFields?: Record<string, unknown>
-  metadata?: Record<string, unknown>
-  featured?: boolean
-  order?: number
-  locale?: string
-  localizations?: (WorkItem & StrapiEntity)[]
-}
-export type WorkItemResponse = StrapiResponse<WorkItem>
-export type WorkItemCollectionResponse = StrapiCollectionResponse<WorkItem>

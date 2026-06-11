@@ -6,19 +6,9 @@ const TypedBlocks = Blocks as unknown as BlocksMap
 
 type DynamicBlock = { __component?: string } & Record<string, unknown>
 
-type OpeningDay = {
-  dayLabel: string
-  isClosedAllDay?: boolean | null
-  firstPeriodOpenTime?: string | null
-  firstPeriodCloseTime?: string | null
-  secondPeriodOpenTime?: string | null
-  secondPeriodCloseTime?: string | null
-}
-
 type SectionGenericProps = {
   title?: string
   blocks: DynamicBlock[]
-  sharedOpeningDays?: OpeningDay[]
   identifier?: string
   spacingTop?: 'none' | 'small' | 'medium' | 'large'
   spacingBottom?: 'none' | 'small' | 'medium' | 'large'
@@ -30,24 +20,11 @@ export const SectionGeneric = ({
   identifier,
   title,
   blocks,
-  sharedOpeningDays,
   spacingTop = 'medium',
   spacingBottom = 'medium',
   containerWidth = 'medium',
   isFirstSection = false,
 }: SectionGenericProps) => {
-  const localTextMapWithOpeningDays = (blocks || []).find((block) => {
-    const component = (block as { __component?: string }).__component
-    const days = (block as { openingDays?: unknown }).openingDays
-    return component === 'blocks.text-map-block' && Array.isArray(days)
-  }) as ({ openingDays?: OpeningDay[] } & DynamicBlock) | undefined
-
-  const openingDaysFromTextMap = localTextMapWithOpeningDays?.openingDays
-  const effectiveOpeningDays =
-    openingDaysFromTextMap && openingDaysFromTextMap.length > 0
-      ? openingDaysFromTextMap
-      : sharedOpeningDays
-
   const toPascalStatic = (s: string) =>
     s
       .split('-')
@@ -81,7 +58,7 @@ export const SectionGeneric = ({
   }
   const renderBlock = (block: DynamicBlock, index: number) => {
     // Try to render a matching React block component from `src/components/blocks`.
-    // Component names are generated from Strapi __component like 'blocks.cards-block' -> 'CardsBlock'
+    // Component names are derived from Strapi __component like 'blocks.text-block' -> 'TextBlock'
     const raw = (block as { __component?: string }).__component ?? ''
     const key = raw.split('.').pop() || raw
     const toPascal = (s: string) =>
@@ -95,44 +72,9 @@ export const SectionGeneric = ({
       | undefined
 
     if (BlockComponent) {
-      const isReservationBlock = raw === 'blocks.reservation-block'
-      const reservationOwnOpeningDays = (block as { openingDays?: unknown })
-        .openingDays
-      const hasOwnOpeningDays =
-        Array.isArray(reservationOwnOpeningDays) &&
-        reservationOwnOpeningDays.length > 0
-      const blockProps =
-        isReservationBlock &&
-        Array.isArray(effectiveOpeningDays) &&
-        effectiveOpeningDays.length > 0
-          ? {
-              ...(block as Record<string, unknown>),
-              openingDays: hasOwnOpeningDays
-                ? reservationOwnOpeningDays
-                : effectiveOpeningDays,
-            }
-          : (block as Record<string, unknown>)
-
-      // Lazy load CarouselBlock if not first block (above-the-fold optimization)
-      const isCarousel = componentName === 'CarouselBlock'
-      const shouldLazyLoad = isCarousel && index > 0
-
-      if (shouldLazyLoad) {
-        return (
-          <div key={index} style={{ minHeight: '300px' }}>
-            <React.Suspense
-              fallback={
-                <div className="h-72 bg-gray-100 animate-pulse rounded-lg" />
-              }
-            >
-              <BlockComponent {...blockProps} />
-            </React.Suspense>
-          </div>
-        )
-      }
-
       // Add priority to the first ImageBlock of the first section (LCP optimization)
       const isLCPImage = index === firstImageBlockIndex
+      const blockProps = block as Record<string, unknown>
       const finalProps = isLCPImage
         ? { ...blockProps, priority: true }
         : blockProps

@@ -58,10 +58,7 @@ export default {
         "blocks.button-block",
         "blocks.hero-block-simple-text",
         "blocks.text-image-block",
-        "blocks.cards-block",
-        "blocks.carousel-block",
         "blocks.timeline-block",
-        "blocks.work-block",
         "blocks.contact-form-block"
       ],
       "required": true

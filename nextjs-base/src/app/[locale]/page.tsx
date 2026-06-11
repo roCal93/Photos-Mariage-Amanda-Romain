@@ -1,6 +1,5 @@
 import { createStrapiClient } from '@/lib/strapi-client'
 import { getPageSEO } from '@/lib/seo'
-import { cleanImageUrl } from '@/lib/strapi'
 import { getHreflangAlternates } from '@/lib/hreflang'
 import { Layout } from '@/components/layout'
 import { Hero } from '@/components/sections/Hero'
@@ -9,36 +8,6 @@ import { WeddingRsvpBackground } from '@/components/photo-share/WeddingRsvpBackg
 import { PageCollectionResponse, StrapiBlock } from '@/types/strapi'
 import { DynamicBlock } from '@/types/custom'
 import Link from 'next/link'
-
-type OpeningDay = {
-  dayLabel: string
-  isClosedAllDay?: boolean | null
-  firstPeriodOpenTime?: string | null
-  firstPeriodCloseTime?: string | null
-  secondPeriodOpenTime?: string | null
-  secondPeriodCloseTime?: string | null
-}
-
-const getSharedOpeningDays = (sections: unknown[]): OpeningDay[] => {
-  for (const section of sections) {
-    const blocks = (section as { blocks?: unknown[] }).blocks
-    if (!Array.isArray(blocks)) continue
-
-    for (const block of blocks) {
-      const component = (block as { __component?: string }).__component
-      const openingDays = (block as { openingDays?: unknown }).openingDays
-      if (
-        component === 'blocks.text-map-block' &&
-        Array.isArray(openingDays) &&
-        openingDays.length > 0
-      ) {
-        return openingDays as OpeningDay[]
-      }
-    }
-  }
-
-  return []
-}
 
 export const dynamic = 'force-dynamic'
 
@@ -64,7 +33,7 @@ const fetchHomePageData = async (locale: string, isDraft: boolean) => {
       'locale',
     ],
     populate:
-      'sections.blocks.cards.image,sections.blocks.image,sections.blocks.imageDesktop,sections.blocks.buttons.file,sections.blocks.items.images.image,sections.blocks.items.images.link,sections.blocks.examples,sections.blocks.workItems.image,sections.blocks.workItems.categories,sections.blocks.privacyPolicy,sections.blocks.markerImage,sections.blocks.openingDays,seoImage,localizations',
+      'sections.blocks.image,sections.blocks.imageDesktop,sections.blocks.buttons.file,sections.blocks.items.images.image,sections.blocks.items.images.link,sections.blocks.examples,sections.blocks.privacyPolicy,seoImage,localizations',
     locale,
     publicationState: isDraft ? 'preview' : 'live',
   })
@@ -83,7 +52,7 @@ const fetchHomePageData = async (locale: string, isDraft: boolean) => {
         'locale',
       ],
       populate:
-        'sections.blocks.cards.image,sections.blocks.image,sections.blocks.imageDesktop,sections.blocks.buttons.file,sections.blocks.items.images.image,sections.blocks.items.images.link,sections.blocks.examples,sections.blocks.workItems.image,sections.blocks.workItems.categories,sections.blocks.privacyPolicy,sections.blocks.markerImage,sections.blocks.openingDays,seoImage,localizations',
+        'sections.blocks.image,sections.blocks.imageDesktop,sections.blocks.buttons.file,sections.blocks.items.images.image,sections.blocks.items.images.link,sections.blocks.examples,sections.blocks.privacyPolicy,seoImage,localizations',
       locale: 'fr',
       publicationState: isDraft ? 'preview' : 'live',
     })
@@ -151,15 +120,9 @@ export async function generateMetadata({
   const res = await getHomePageData(locale)
   const page = res?.data?.[0]
   const firstBlock = page?.sections?.[0]?.blocks?.[0] as
-    | {
-        image?: { url: string }
-        workItems?: Array<{ image?: { url: string } }>
-      }
+    | { image?: { url: string } }
     | undefined
   const firstImage = firstBlock?.image
-
-  // Check for carousel workItems images
-  const firstWorkItemImage = firstBlock?.workItems?.[0]?.image
 
   const links: {
     rel: string
@@ -170,34 +133,15 @@ export async function generateMetadata({
 
   // Preload main image
   if (firstImage) {
-    const imageUrl = cleanImageUrl(firstImage.url)
-    if (imageUrl) {
-      const fullUrl = imageUrl.startsWith('/')
-        ? `${process.env.NEXT_PUBLIC_STRAPI_URL}${imageUrl}`
-        : imageUrl
-      links.push({
-        rel: 'preload',
-        href: fullUrl,
-        as: 'image',
-        fetchpriority: 'high',
-      })
-    }
-  }
-
-  // Preload first carousel image if exists
-  if (firstWorkItemImage) {
-    const imageUrl = cleanImageUrl(firstWorkItemImage.url)
-    if (imageUrl) {
-      const fullUrl = imageUrl.startsWith('/')
-        ? `${process.env.NEXT_PUBLIC_STRAPI_URL}${imageUrl}`
-        : imageUrl
-      links.push({
-        rel: 'preload',
-        href: fullUrl,
-        as: 'image',
-        fetchpriority: 'high',
-      })
-    }
+    const fullUrl = firstImage.url.startsWith('/')
+      ? `${process.env.NEXT_PUBLIC_STRAPI_URL}${firstImage.url}`
+      : firstImage.url
+    links.push({
+      rel: 'preload',
+      href: fullUrl,
+      as: 'image',
+      fetchpriority: 'high',
+    })
   }
 
   // SEO per-locale: fetch home metadata for the active locale
@@ -289,8 +233,6 @@ export default async function HomeLocale({
           )
           .join('\n') || ''
 
-  const sharedOpeningDays = getSharedOpeningDays(sections)
-
   return (
     <Layout locale={locale}>
       {!page.hideTitle && <Hero title={getText(page.title)} />}
@@ -301,7 +243,6 @@ export default async function HomeLocale({
           identifier={section.identifier}
           title={section.hideTitle ? undefined : section.title}
           blocks={section.blocks as DynamicBlock[]}
-          sharedOpeningDays={sharedOpeningDays}
           containerWidth={normalizeContainerWidth(section.containerWidth)}
           isFirstSection={sectionIndex === 0}
           spacingTop={
