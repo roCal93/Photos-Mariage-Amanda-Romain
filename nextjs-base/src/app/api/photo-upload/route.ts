@@ -191,10 +191,12 @@ export async function POST(request: NextRequest) {
           throw new Error('Media externe invalide: url/mime requis.')
         }
 
+        const mediaType = item.mime.startsWith('video/') ? 'video' : 'image'
+
         const safeTitle =
           (item.title && item.title.trim()) ||
-          `video-${Date.now()}-${index + 1}`
-        const baseSlug = slugifyTitle(safeTitle) || 'video'
+          `${mediaType}-${Date.now()}-${index + 1}`
+        const baseSlug = slugifyTitle(safeTitle) || mediaType
 
         await tryCreatePhoto(['/api/photos?status=published', '/api/photos'], {
           title: safeTitle.slice(0, 120),
@@ -202,7 +204,7 @@ export async function POST(request: NextRequest) {
           authorName,
           visibility: 'public',
           moderationStatus,
-          mediaType: 'video',
+          mediaType,
           externalUrl: item.url,
           externalMime: item.mime,
           externalWidth: typeof item.width === 'number' ? item.width : null,

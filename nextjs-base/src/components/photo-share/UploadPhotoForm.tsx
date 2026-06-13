@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
+import { FormEvent, useRef, useState } from 'react'
 
 type SubmitState = {
   type: 'idle' | 'success' | 'error'
@@ -9,7 +9,7 @@ type SubmitState = {
 
 type UploadPhase = 'idle' | 'uploading' | 'publishing'
 
-const STRAPI_UPLOAD_URL = `${process.env.NEXT_PUBLIC_STRAPI_URL || ''}/api/bunny-upload`
+const BUNNY_UPLOAD_PROXY_URL = '/api/bunny-upload'
 
 type BunnyUploadResponse = {
   url?: string
@@ -34,12 +34,6 @@ async function uploadMediaToBunny(
   authorName: string,
   onProgress?: (loaded: number, total: number) => void
 ) {
-  if (!process.env.NEXT_PUBLIC_STRAPI_URL) {
-    throw new Error(
-      'NEXT_PUBLIC_STRAPI_URL manquant pour envoyer vers le backend.'
-    )
-  }
-
   const bunnyBody = new FormData()
   bunnyBody.append('file', file)
   bunnyBody.append('authorName', authorName)
@@ -50,7 +44,7 @@ async function uploadMediaToBunny(
     json: BunnyUploadResponse | null
   }>((resolve, reject) => {
     const xhr = new XMLHttpRequest()
-    xhr.open('POST', STRAPI_UPLOAD_URL)
+    xhr.open('POST', BUNNY_UPLOAD_PROXY_URL)
     xhr.responseType = 'json'
 
     xhr.upload.onprogress = (event) => {
@@ -102,6 +96,7 @@ async function uploadMediaToBunny(
 }
 
 export function UploadPhotoForm() {
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [submitting, setSubmitting] = useState(false)
   const [state, setState] = useState<SubmitState>({ type: 'idle' })
   const [uploadPhase, setUploadPhase] = useState<UploadPhase>('idle')
@@ -109,6 +104,7 @@ export function UploadPhotoForm() {
   const [uploadedFilesCount, setUploadedFilesCount] = useState(0)
   const [totalFilesCount, setTotalFilesCount] = useState(0)
   const [selectedFilesCount, setSelectedFilesCount] = useState(0)
+  const [selectedFileNames, setSelectedFileNames] = useState<string[]>([])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -233,6 +229,7 @@ export function UploadPhotoForm() {
       setUploadProgress(100)
       setUploadPhase('idle')
       setSelectedFilesCount(0)
+      setSelectedFileNames([])
       setState({
         type: 'success',
         message: `${uploadedCount} media(s) publie(s) avec succes.`,
@@ -266,33 +263,47 @@ export function UploadPhotoForm() {
         />
       </label>
 
-      <label
-        className="flex flex-col items-center justify-center cursor-pointer"
-        onClick={() => document.getElementById('fileInput')?.click()}
-      >
+      <div className="flex flex-col items-center justify-center">
         <input
+          ref={fileInputRef}
           name="files"
           type="file"
           accept="image/*,video/mp4,video/quicktime,video/webm"
           multiple
           required
-          className="hidden"
-          id="fileInput"
+          className="sr-only"
+          id="upload-files-input"
           onChange={(e) => {
             const files = e.currentTarget.files
             setSelectedFilesCount(files ? files.length : 0)
+            setSelectedFileNames(
+              files ? Array.from(files).map((file) => file.name) : []
+            )
           }}
         />
-        <span className="inline-flex items-center justify-center rounded-full bg-[#74511e]/60 px-4 py-2 text-lg font-semibold text-white transition hover:bg-[#74511e]">
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="inline-flex items-center justify-center rounded-full bg-[#74511e]/60 px-4 py-2 text-lg font-semibold text-white transition hover:bg-[#74511e]"
+        >
           Sélectionner des fichiers
-        </span>
+        </button>
         {selectedFilesCount > 0 && (
-          <span className="mt-2 text-sm text-stone-600">
+          <p className="mt-2 text-sm text-stone-600">
             {selectedFilesCount} fichier{selectedFilesCount > 1 ? 's' : ''}{' '}
             sélectionné{selectedFilesCount > 1 ? 's' : ''}
-          </span>
+          </p>
         )}
-      </label>
+
+        {selectedFileNames.length > 0 && (
+          <p className="mt-1 text-xs text-stone-500 text-center">
+            {selectedFileNames.slice(0, 2).join(', ')}
+            {selectedFileNames.length > 2
+              ? ` +${selectedFileNames.length - 2} autre(s)`
+              : ''}
+          </p>
+        )}
+      </div>
 
       {submitting ? (
         <div className="space-y-2 rounded-3xl border border-stone-200 bg-stone-50 p-4">
