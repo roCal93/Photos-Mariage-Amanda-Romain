@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            'Trop de tentatives. Veuillez reessayer dans quelques minutes.',
+            'Trop de tentatives. Veuillez réessayer dans quelques minutes.',
         },
         {
           status: 429,

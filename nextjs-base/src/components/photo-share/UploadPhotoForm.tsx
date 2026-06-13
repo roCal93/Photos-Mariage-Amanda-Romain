@@ -53,7 +53,7 @@ async function uploadMediaToBunny(
     }
 
     xhr.onerror = () => {
-      reject(new Error("Erreur reseau pendant l'upload Bunny.net."))
+      reject(new Error("Erreur réseau pendant l'upload Bunny.net."))
     }
 
     xhr.onload = () => {
@@ -82,7 +82,7 @@ async function uploadMediaToBunny(
     typeof json.url !== 'string' ||
     typeof json.mime !== 'string'
   ) {
-    const message = getErrorMessage(json?.error) || 'Echec upload Bunny.net.'
+    const message = getErrorMessage(json?.error) || 'Échec upload Bunny.net.'
     throw new Error(message)
   }
 
@@ -182,7 +182,7 @@ export function UploadPhotoForm() {
             type: 'error',
             message:
               imageJson?.error ||
-              'Le depot image a echoue. Reessaie dans un instant.',
+              'Le dépôt image a échoué. Réessaie dans un instant.',
           })
           return
         }
@@ -217,7 +217,7 @@ export function UploadPhotoForm() {
             type: 'error',
             message:
               videoJson?.error ||
-              'Le depot video a echoue. Reessaie dans un instant.',
+              'Le dépôt vidéo a échoué. Réessaie dans un instant.',
           })
           return
         }
@@ -232,7 +232,7 @@ export function UploadPhotoForm() {
       setSelectedFileNames([])
       setState({
         type: 'success',
-        message: `${uploadedCount} media(s) publie(s) avec succes.`,
+        message: `${uploadedCount} média(s) publié(s) avec succès.`,
       })
     } catch (error) {
       setState({
@@ -240,7 +240,7 @@ export function UploadPhotoForm() {
         message:
           error instanceof Error
             ? error.message
-            : "Erreur reseau pendant l'envoi. Reessaie dans un instant.",
+            : "Erreur réseau pendant l'envoi. Réessaie dans un instant.",
       })
     } finally {
       setUploadPhase('idle')
@@ -317,8 +317,8 @@ export function UploadPhotoForm() {
           </div>
           <p className="text-xs text-stone-500">
             {uploadPhase === 'publishing'
-              ? `${uploadedFilesCount} fichier(s) sur ${totalFilesCount} envoyes, publication en cours`
-              : `${uploadedFilesCount} fichier(s) sur ${totalFilesCount} envoyes`}
+              ? `${uploadedFilesCount} fichier(s) sur ${totalFilesCount} envoyés, publication en cours`
+              : `${uploadedFilesCount} fichier(s) sur ${totalFilesCount} envoyés`}
           </p>
           <div className="h-2 overflow-hidden rounded-full bg-stone-200">
             <div

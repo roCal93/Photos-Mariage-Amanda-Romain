@@ -123,15 +123,15 @@ async function tryCreatePhoto(
 
   throw new Error(
     lastError
-      ? `Creation photo echouee (${lastError.status}): ${lastError.body}`
-      : 'Creation photo echouee.'
+      ? `Création photo échouée (${lastError.status}): ${lastError.body}`
+      : 'Création photo échouée.'
   )
 }
 
 export async function POST(request: NextRequest) {
   if (!STRAPI_URL || !STRAPI_WRITE_API_TOKEN) {
     return NextResponse.json(
-      { error: "Configuration serveur incomplete pour l'upload photo." },
+      { error: "Configuration serveur incomplète pour l'upload photo." },
       { status: 500 }
     )
   }
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
 
   if (!rateLimit.allowed) {
     return NextResponse.json(
-      { error: 'Trop de tentatives. Reessaie dans quelques minutes.' },
+      { error: 'Trop de tentatives. Réessaie dans quelques minutes.' },
       {
         status: 429,
         headers: {
@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
 
     if (externalMedia.length === 0) {
       return NextResponse.json(
-        { error: 'Aucun media externe recu.' },
+        { error: 'Aucun média externe reçu.' },
         { status: 400 }
       )
     }
@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           ok: true,
-          message: `${externalMedia.length} media(s) publie(s) avec succes.`,
+          message: `${externalMedia.length} média(s) publié(s) avec succès.`,
         },
         { status: 201 }
       )
@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
           error:
             error instanceof Error
               ? error.message
-              : 'Erreur lors de la creation du media externe.',
+              : 'Erreur lors de la création du média externe.',
         },
         { status: 502 }
       )
@@ -268,7 +268,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            'Format non supporte. Utilise JPEG, PNG, WebP, HEIC, MP4, MOV ou WebM.',
+            'Format non supporté. Utilise JPEG, PNG, WebP, HEIC, MP4, MOV ou WebM.',
         },
         { status: 400 }
       )
@@ -278,7 +278,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: file.type.startsWith('video/')
-            ? 'Chaque video doit faire moins de 4 Mo pour cet upload web.'
+            ? 'Chaque vidéo doit faire moins de 4 Mo pour cet upload web.'
             : 'Chaque image doit faire moins de 30 Mo.',
         },
         { status: 400 }
@@ -316,7 +316,7 @@ export async function POST(request: NextRequest) {
         : null
 
       if (!uploadedFile) {
-        throw new Error('Aucun media recu apres upload.')
+        throw new Error('Aucun média reçu après upload.')
       }
 
       uploadedFileIds.push(uploadedFile.id)
@@ -351,7 +351,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (!created) {
-        throw new Error("Impossible de creer l'entree photo dans Strapi.")
+        throw new Error("Impossible de créer l'entrée photo dans Strapi.")
       }
     }
 
@@ -360,8 +360,8 @@ export async function POST(request: NextRequest) {
         ok: true,
         message:
           moderationStatus === 'approved'
-            ? `${files.length} media(s) publie(s) avec succes.`
-            : `${files.length} media(s) recu(s). Ils seront visibles apres validation.`,
+            ? `${files.length} média(s) publié(s) avec succès.`
+            : `${files.length} média(s) reçu(s). Ils seront visibles après validation.`,
       },
       { status: 201 }
     )
@@ -378,7 +378,7 @@ export async function POST(request: NextRequest) {
         error:
           error instanceof Error
             ? error.message
-            : 'Erreur lors de la creation de la photo.',
+            : 'Erreur lors de la création de la photo.',
       },
       { status: 502 }
     )

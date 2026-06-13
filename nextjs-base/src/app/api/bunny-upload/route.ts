@@ -5,7 +5,7 @@ const STRAPI_URL = process.env.STRAPI_URL || process.env.NEXT_PUBLIC_STRAPI_URL
 export async function POST(request: NextRequest) {
   if (!STRAPI_URL) {
     return NextResponse.json(
-      { error: 'Configuration serveur incomplete pour bunny-upload.' },
+      { error: 'Configuration serveur incomplète pour bunny-upload.' },
       { status: 500 }
     )
   }
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
   if (!response.ok) {
     return NextResponse.json(
       {
-        error: payload?.error || `Echec upload Bunny.net (${response.status}).`,
+        error: payload?.error || `Échec upload Bunny.net (${response.status}).`,
       },
       { status: response.status }
     )
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     typeof payload.mime !== 'string'
   ) {
     return NextResponse.json(
-      { error: 'Reponse bunny-upload invalide.' },
+      { error: 'Réponse bunny-upload invalide.' },
       { status: 502 }
     )
   }
