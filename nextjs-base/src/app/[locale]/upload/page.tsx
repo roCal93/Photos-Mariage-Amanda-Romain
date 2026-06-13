@@ -29,8 +29,11 @@ export default async function UploadPage({
       <section className="relative overflow-hidden">
         <WeddingRsvpBackground />
         <div className="relative z-10 mx-auto max-w-7xl px-4 py-10 md:px-8 md:py-14">
-          <h1 className="mb-8 text-4xl font-semibold tracking-tight text-stone-950 md:mb-10 md:text-6xl">
-            Donne nous tes photos !
+          <h1
+            className="mb-8 text-center text-5xl text-stone-600 md:mb-10 md:text-7xl"
+            style={{ fontFamily: 'var(--font-hurricane)' }}
+          >
+            Partage tes photos !
           </h1>
 
           <div className="relative overflow-hidden rounded-[2.25rem] border border-stone-200 bg-white/90 p-8 shadow-[0_24px_90px_-54px_rgba(15,23,42,0.45)] backdrop-blur md:p-10">
@@ -42,11 +45,8 @@ export default async function UploadPage({
               >
                 Retour à l&apos;accueil
               </Link>
-              <p className="mt-4 text-sm font-semibold uppercase tracking-[0.24em] text-stone-500">
-                Formulaire de téléchargement
-              </p>
-              <h2 className="mt-4 text-4xl font-semibold tracking-tight text-stone-950">
-                Envoyer un ou plusieurs médias.
+              <h2 className="mt-4 text-2xl font-semibold tracking-tight text-stone-950">
+                Tu peux en envoyer plusieurs à la fois, mais sois patient(e)!
               </h2>
 
               {!hasServiceToken ? (

@@ -196,23 +196,42 @@ export default async function HomeLocale({
           <WeddingRsvpBackground />
           <div className="relative z-10 flex min-h-screen items-start justify-center px-4 pt-16 pb-10 md:items-center md:px-8 md:py-14">
             <div className="flex min-h-[calc(100vh-6.5rem)] w-full max-w-4xl flex-col items-center text-center md:min-h-[18rem] md:justify-between">
-              <h1 className="text-4xl font-semibold tracking-tight text-stone-950 md:text-6xl">
-                Photos Mariage Amanda & Romain
-              </h1>
+              <div>
+                <p
+                  className="text-3xl text-stone-600 mb-3"
+                  style={{ fontFamily: 'var(--font-hurricane)' }}
+                >
+                  Photos mariage
+                </p>
+                <h1 className="font-serif font-normal text-[#74511e] mb-1 leading-tight">
+                  <span className="block text-4xl tracking-widest uppercase">
+                    Amanda
+                  </span>
+                  <span
+                    className="block text-center text-5xl text-stone-600 my-1 relative -left-2"
+                    style={{ fontFamily: 'var(--font-hurricane)' }}
+                  >
+                    et
+                  </span>
+                  <span className="block text-4xl tracking-widest uppercase">
+                    Romain
+                  </span>
+                </h1>
+              </div>
 
               <div className="flex flex-1 items-center justify-center md:flex-none">
                 <div className="flex w-full max-w-xs flex-col items-center justify-center gap-4 sm:max-w-none sm:flex-row sm:flex-wrap">
                   <Link
                     href={`/${locale}/photos`}
-                    className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-stone-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-800 sm:w-auto"
+                    className="inline-flex min-h-10 w-full items-center justify-center rounded-full bg-[#74511e]/60 px-6 py-2 text-lg font-semibold text-white transition hover:bg-[#74511e] sm:w-auto"
                   >
                     Galerie
                   </Link>
                   <Link
                     href={uploadHref}
-                    className="inline-flex min-h-12 w-full items-center justify-center rounded-full border border-stone-300 bg-white px-6 py-3 text-sm font-semibold text-stone-900 transition hover:border-stone-900 sm:w-auto"
+                    className="inline-flex min-h-10 w-full items-center justify-center rounded-full bg-[#74511e]/60 px-6 py-2 text-lg font-semibold text-white transition hover:bg-[#74511e] sm:w-auto"
                   >
-                    Télécharger
+                    Ajouter des photos
                   </Link>
                 </div>
               </div>

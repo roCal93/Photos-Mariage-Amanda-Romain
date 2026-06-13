@@ -108,6 +108,7 @@ export function UploadPhotoForm() {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadedFilesCount, setUploadedFilesCount] = useState(0)
   const [totalFilesCount, setTotalFilesCount] = useState(0)
+  const [selectedFilesCount, setSelectedFilesCount] = useState(0)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -231,6 +232,7 @@ export function UploadPhotoForm() {
       form.reset()
       setUploadProgress(100)
       setUploadPhase('idle')
+      setSelectedFilesCount(0)
       setState({
         type: 'success',
         message: `${uploadedCount} media(s) publie(s) avec succes.`,
@@ -250,8 +252,11 @@ export function UploadPhotoForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <label className="grid gap-2 text-sm font-medium text-stone-700">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-5 flex flex-col items-center"
+    >
+      <label className="w-full grid gap-2 text-sm font-medium text-stone-700">
         <input
           name="authorName"
           required
@@ -261,16 +266,32 @@ export function UploadPhotoForm() {
         />
       </label>
 
-      <label className="grid gap-2 text-sm font-medium text-stone-700">
-        Deposer une ou plusieurs photos ou videos
+      <label
+        className="flex flex-col items-center justify-center cursor-pointer"
+        onClick={() => document.getElementById('fileInput')?.click()}
+      >
         <input
           name="files"
           type="file"
           accept="image/*,video/mp4,video/quicktime,video/webm"
           multiple
           required
-          className="block w-full min-w-0 rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-5 text-sm text-stone-700 file:mr-3 file:mb-2 file:rounded-full file:border-0 file:bg-stone-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white sm:file:mb-0"
+          className="hidden"
+          id="fileInput"
+          onChange={(e) => {
+            const files = e.currentTarget.files
+            setSelectedFilesCount(files ? files.length : 0)
+          }}
         />
+        <span className="inline-flex items-center justify-center rounded-full bg-[#74511e]/60 px-4 py-2 text-lg font-semibold text-white transition hover:bg-[#74511e]">
+          Sélectionner des fichiers
+        </span>
+        {selectedFilesCount > 0 && (
+          <span className="mt-2 text-sm text-stone-600">
+            {selectedFilesCount} fichier{selectedFilesCount > 1 ? 's' : ''}{' '}
+            sélectionné{selectedFilesCount > 1 ? 's' : ''}
+          </span>
+        )}
       </label>
 
       {submitting ? (
@@ -312,7 +333,7 @@ export function UploadPhotoForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-stone-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+        className="inline-flex items-center justify-center rounded-full bg-[#74511e]/60 px-4 py-2 text-base font-semibold text-white transition hover:bg-[#74511e] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting ? 'Envoi en cours...' : 'Envoyer'}
       </button>

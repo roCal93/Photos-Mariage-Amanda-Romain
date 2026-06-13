@@ -1,5 +1,10 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import {
+  Geist,
+  Geist_Mono,
+  Hurricane,
+  Cormorant_Garamond,
+} from 'next/font/google'
 import './globals.css'
 import { cookies, headers } from 'next/headers'
 import { defaultLocale } from '@/lib/locales'
@@ -22,6 +27,23 @@ const geistMono = Geist_Mono({
   display: 'swap',
   preload: false,
   adjustFontFallback: true,
+})
+
+const cormorantGaramond = Cormorant_Garamond({
+  variable: '--font-cormorant',
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  style: ['normal', 'italic'],
+  display: 'swap',
+  preload: true,
+})
+
+const hurricane = Hurricane({
+  variable: '--font-hurricane',
+  subsets: ['latin'],
+  weight: '400',
+  display: 'swap',
+  preload: true,
 })
 
 export const metadata: Metadata = {
@@ -88,6 +110,7 @@ export default async function RootLayout({
       lang={locale}
       suppressHydrationWarning
       data-disable-dark={disableDark ? 'true' : undefined}
+      className={`${cormorantGaramond.variable} ${hurricane.variable}`}
     >
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

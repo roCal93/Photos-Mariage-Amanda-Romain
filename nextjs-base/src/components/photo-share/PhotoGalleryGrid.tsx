@@ -166,14 +166,14 @@ export function PhotoGalleryGrid({ locale, photos }: PhotoGalleryGridProps) {
         <WeddingRsvpCardBackground />
         <div className="relative z-10 flex flex-wrap items-center gap-3">
           <span className="text-sm font-medium text-stone-700">
-            {selectedKeys.length} fichier(s) selectionne(s) sur {photos.length}
+            {selectedKeys.length} fichier(s) sélectionné(s) sur {photos.length}
           </span>
           <button
             type="button"
             onClick={selectAll}
             className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-950"
           >
-            Tout selectionner
+            Tout sélectionner
           </button>
           <button
             type="button"
@@ -190,8 +190,8 @@ export function PhotoGalleryGrid({ locale, photos }: PhotoGalleryGridProps) {
             className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-950 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {downloading
-              ? 'Telechargement...'
-              : `Telecharger tout (${photos.length})`}
+              ? 'Téléchargement...'
+              : `Télécharger tout (${photos.length})`}
           </button>
           <button
             type="button"
@@ -200,8 +200,8 @@ export function PhotoGalleryGrid({ locale, photos }: PhotoGalleryGridProps) {
             className="rounded-full bg-stone-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {downloading
-              ? 'Telechargement...'
-              : `Telecharger la selection${selectedKeys.length > 0 ? ` (${selectedKeys.length})` : ''}`}
+              ? 'Téléchargement...'
+              : `Télécharger la sélection${selectedKeys.length > 0 ? ` (${selectedKeys.length})` : ''}`}
           </button>
         </div>
       </div>
