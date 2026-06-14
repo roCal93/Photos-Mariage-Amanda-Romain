@@ -11,6 +11,17 @@ type UploadPhase = 'idle' | 'uploading' | 'publishing'
 
 const BUNNY_UPLOAD_PROXY_URL = '/api/bunny-upload'
 
+function getDirectBunnyUploadUrl() {
+  const baseUrl = process.env.NEXT_PUBLIC_STRAPI_URL
+  if (!baseUrl) return null
+
+  try {
+    return new URL('/api/bunny-upload', baseUrl).toString()
+  } catch {
+    return null
+  }
+}
+
 type BunnyUploadResponse = {
   url?: string
   mime?: string
@@ -18,6 +29,14 @@ type BunnyUploadResponse = {
   width?: number
   height?: number
   error?: string | { message?: string }
+}
+
+type BunnyUploadAttempt = {
+  status: number
+  ok: boolean
+  json: BunnyUploadResponse | null
+  rawText: string
+  targetLabel: string
 }
 
 function getErrorMessage(error: BunnyUploadResponse['error']) {
@@ -38,51 +57,99 @@ async function uploadMediaToBunny(
   bunnyBody.append('file', file)
   bunnyBody.append('authorName', authorName)
 
-  const response = await new Promise<{
-    status: number
-    ok: boolean
-    json: BunnyUploadResponse | null
-  }>((resolve, reject) => {
-    const xhr = new XMLHttpRequest()
-    xhr.open('POST', BUNNY_UPLOAD_PROXY_URL)
-    xhr.responseType = 'json'
+  const directBunnyUrl = getDirectBunnyUploadUrl()
+  const uploadTargets =
+    file.type.startsWith('video/') && directBunnyUrl
+      ? [
+          { url: directBunnyUrl, label: 'direct Strapi' },
+          { url: BUNNY_UPLOAD_PROXY_URL, label: 'proxy Next.js' },
+        ]
+      : [{ url: BUNNY_UPLOAD_PROXY_URL, label: 'proxy Next.js' }]
 
-    xhr.upload.onprogress = (event) => {
-      if (!event.lengthComputable) return
-      onProgress?.(event.loaded, event.total)
+  const attemptUpload = (uploadUrl: string, targetLabel: string) =>
+    new Promise<BunnyUploadAttempt>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', uploadUrl)
+      xhr.responseType = 'text'
+
+      xhr.upload.onprogress = (event) => {
+        if (!event.lengthComputable) return
+        onProgress?.(event.loaded, event.total)
+      }
+
+      xhr.onerror = () => {
+        reject(
+          new Error(
+            `Erreur réseau pendant l'upload Bunny.net (${targetLabel}).`
+          )
+        )
+      }
+
+      xhr.onload = () => {
+        const rawText = xhr.responseText || ''
+        let json: BunnyUploadResponse | null = null
+
+        if (rawText) {
+          try {
+            json = (JSON.parse(rawText) as BunnyUploadResponse | null) ?? null
+          } catch {
+            json = null
+          }
+        }
+
+        resolve({
+          status: xhr.status,
+          ok: xhr.status >= 200 && xhr.status < 300,
+          json,
+          rawText,
+          targetLabel,
+        })
+      }
+
+      xhr.send(bunnyBody)
+    })
+
+  let response: BunnyUploadAttempt | null = null
+
+  for (const target of uploadTargets) {
+    try {
+      response = await attemptUpload(target.url, target.label)
+
+      if (
+        response.ok &&
+        response.json &&
+        typeof response.json.url === 'string' &&
+        typeof response.json.mime === 'string'
+      ) {
+        break
+      }
+    } catch {
+      response = null
     }
-
-    xhr.onerror = () => {
-      reject(new Error("Erreur réseau pendant l'upload Bunny.net."))
-    }
-
-    xhr.onload = () => {
-      const responseJson =
-        xhr.response && typeof xhr.response === 'object'
-          ? (xhr.response as BunnyUploadResponse)
-          : null
-
-      resolve({
-        status: xhr.status,
-        ok: xhr.status >= 200 && xhr.status < 300,
-        json: responseJson,
-      })
-    }
-
-    xhr.send(bunnyBody)
-  })
+  }
 
   onProgress?.(file.size, file.size)
 
-  const json = response.json
+  const json = response?.json
 
   if (
-    !response.ok ||
+    !response?.ok ||
     !json ||
     typeof json.url !== 'string' ||
     typeof json.mime !== 'string'
   ) {
-    const message = getErrorMessage(json?.error) || 'Échec upload Bunny.net.'
+    const backendMessage = getErrorMessage(json?.error)
+    const details = response?.rawText?.trim()
+    const shortDetails = details ? details.slice(0, 180) : ''
+    const status = response?.status ? ` (${response.status})` : ''
+    const target = response?.targetLabel ? ` via ${response.targetLabel}` : ''
+
+    const message =
+      backendMessage ||
+      (shortDetails
+        ? `Échec upload Bunny.net${status}${target}: ${shortDetails}`
+        : `Échec upload Bunny.net${status}${target}.`)
+
     throw new Error(message)
   }
 
