@@ -10,6 +10,14 @@ type SubmitState = {
 type UploadPhase = 'idle' | 'uploading' | 'publishing'
 
 const BUNNY_UPLOAD_PROXY_URL = '/api/bunny-upload'
+const DEFAULT_MAX_PARALLEL_UPLOADS = 4
+const configuredParallelUploads = Number.parseInt(
+  process.env.NEXT_PUBLIC_UPLOAD_PARALLELISM || '',
+  10
+)
+const MAX_PARALLEL_UPLOADS = Number.isFinite(configuredParallelUploads)
+  ? Math.max(1, Math.min(8, configuredParallelUploads))
+  : DEFAULT_MAX_PARALLEL_UPLOADS
 
 function getDirectBunnyUploadUrl() {
   const baseUrl = process.env.NEXT_PUBLIC_STRAPI_URL
@@ -58,13 +66,12 @@ async function uploadMediaToBunny(
   bunnyBody.append('authorName', authorName)
 
   const directBunnyUrl = getDirectBunnyUploadUrl()
-  const uploadTargets =
-    file.type.startsWith('video/') && directBunnyUrl
-      ? [
-          { url: directBunnyUrl, label: 'direct Strapi' },
-          { url: BUNNY_UPLOAD_PROXY_URL, label: 'proxy Next.js' },
-        ]
-      : [{ url: BUNNY_UPLOAD_PROXY_URL, label: 'proxy Next.js' }]
+  const uploadTargets = directBunnyUrl
+    ? [
+        { url: directBunnyUrl, label: 'direct Strapi' },
+        { url: BUNNY_UPLOAD_PROXY_URL, label: 'proxy Next.js' },
+      ]
+    : [{ url: BUNNY_UPLOAD_PROXY_URL, label: 'proxy Next.js' }]
 
   const attemptUpload = (uploadUrl: string, targetLabel: string) =>
     new Promise<BunnyUploadAttempt>((resolve, reject) => {
@@ -188,108 +195,100 @@ export function UploadPhotoForm() {
       .getAll('files')
       .filter((entry): entry is File => entry instanceof File)
 
-    const videoFiles = rawFiles.filter((file) => file.type.startsWith('video/'))
-    const imageFiles = rawFiles.filter(
-      (file) => !file.type.startsWith('video/')
-    )
+    if (rawFiles.length === 0) {
+      setState({
+        type: 'error',
+        message: 'Sélectionne au moins un fichier avant de publier.',
+      })
+      setUploadPhase('idle')
+      setSubmitting(false)
+      return
+    }
+
     setTotalFilesCount(rawFiles.length)
     const totalBytes = rawFiles.reduce((sum, file) => sum + file.size, 0)
     let uploadedBytes = 0
 
     async function uploadFiles(files: File[]) {
-      const uploadedMedia = []
+      const uploadedMedia = new Array(files.length)
+      const loadedByFileIndex = new Array(files.length).fill(0)
+      let nextIndex = 0
 
-      for (const file of files) {
-        let lastLoaded = 0
-        const uploadedMediaItem = await uploadMediaToBunny(
-          file,
-          authorName,
-          (loaded) => {
-            const delta = Math.max(0, loaded - lastLoaded)
-            lastLoaded = loaded
-            uploadedBytes += delta
-            if (totalBytes > 0) {
-              setUploadProgress(
-                Math.min(100, Math.round((uploadedBytes / totalBytes) * 100))
-              )
-            }
+      const worker = async () => {
+        while (true) {
+          const index = nextIndex
+          nextIndex += 1
+
+          if (index >= files.length) {
+            return
           }
-        )
-        uploadedMedia.push(uploadedMediaItem)
-        setUploadedFilesCount((current) => current + 1)
+
+          const file = files[index]
+
+          const uploadedMediaItem = await uploadMediaToBunny(
+            file,
+            authorName,
+            (loaded) => {
+              const safeLoaded = Math.max(
+                loadedByFileIndex[index],
+                Math.min(file.size, loaded)
+              )
+              const delta = safeLoaded - loadedByFileIndex[index]
+
+              if (delta > 0) {
+                loadedByFileIndex[index] = safeLoaded
+                uploadedBytes += delta
+
+                if (totalBytes > 0) {
+                  setUploadProgress(
+                    Math.min(
+                      100,
+                      Math.round((uploadedBytes / totalBytes) * 100)
+                    )
+                  )
+                }
+              }
+            }
+          )
+
+          uploadedMedia[index] = uploadedMediaItem
+          setUploadedFilesCount((current) => current + 1)
+        }
       }
+
+      const parallelism = Math.min(MAX_PARALLEL_UPLOADS, files.length)
+      await Promise.all(Array.from({ length: parallelism }, () => worker()))
 
       return uploadedMedia
     }
 
     try {
-      let uploadedCount = 0
+      const uploadedMedia = await uploadFiles(rawFiles)
+      setUploadPhase('publishing')
 
-      if (imageFiles.length > 0) {
-        const uploadedImages = await uploadFiles(imageFiles)
-        setUploadPhase('publishing')
+      const publishResponse = await fetch('/api/photo-upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          authorName: (body.get('authorName') as string) || '',
+          externalMedia: uploadedMedia,
+        }),
+      })
 
-        const imageResponse = await fetch('/api/photo-upload', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            authorName: (body.get('authorName') as string) || '',
-            externalMedia: uploadedImages,
-          }),
+      const publishJson = (await publishResponse.json().catch(() => null)) as {
+        error?: string
+      } | null
+
+      if (!publishResponse.ok) {
+        setState({
+          type: 'error',
+          message:
+            publishJson?.error ||
+            'La publication a échoué. Réessaie dans un instant.',
         })
-
-        const imageJson = (await imageResponse.json().catch(() => null)) as {
-          error?: string
-        } | null
-
-        if (!imageResponse.ok) {
-          setState({
-            type: 'error',
-            message:
-              imageJson?.error ||
-              'Le dépôt image a échoué. Réessaie dans un instant.',
-          })
-          return
-        }
-
-        uploadedCount += imageFiles.length
-      }
-
-      if (videoFiles.length > 0) {
-        if (imageFiles.length === 0) {
-          setUploadPhase('uploading')
-        }
-        const uploadedVideos = await uploadFiles(videoFiles)
-        setUploadPhase('publishing')
-
-        const videoResponse = await fetch('/api/photo-upload', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            authorName: (body.get('authorName') as string) || '',
-            externalMedia: uploadedVideos,
-          }),
-        })
-
-        const videoJson = (await videoResponse.json().catch(() => null)) as {
-          error?: string
-        } | null
-
-        if (!videoResponse.ok) {
-          setState({
-            type: 'error',
-            message:
-              videoJson?.error ||
-              'Le dépôt vidéo a échoué. Réessaie dans un instant.',
-          })
-          return
-        }
-
-        uploadedCount += videoFiles.length
+        return
       }
 
       form.reset()
@@ -299,7 +298,7 @@ export function UploadPhotoForm() {
       setSelectedFileNames([])
       setState({
         type: 'success',
-        message: `${uploadedCount} média(s) publié(s) avec succès.`,
+        message: `${rawFiles.length} média(s) publié(s) avec succès.`,
       })
     } catch (error) {
       setState({

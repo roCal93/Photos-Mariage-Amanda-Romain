@@ -1,10 +1,13 @@
-import { readFile } from 'node:fs/promises'
+import { createReadStream } from 'node:fs'
+import { stat } from 'node:fs/promises'
 
 type MultipartFile = {
   filepath: string
   originalFilename?: string | null
   mimetype?: string | null
 }
+
+type StreamRequestInit = RequestInit & { duplex: 'half' }
 
 const BUNNY_STORAGE_ZONE = process.env.BUNNY_STORAGE_ZONE
 const BUNNY_API_KEY = process.env.BUNNY_API_KEY
@@ -52,16 +55,19 @@ export default {
       const folder = mimeType.startsWith('video/') ? 'videos' : 'images'
       const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
-      const fileBuffer = await readFile(file.filepath)
+      const fileStats = await stat(file.filepath)
+      const fileStream = createReadStream(file.filepath)
       const uploadUrl = `${BUNNY_STORAGE_ENDPOINT.replace(/\/$/, '')}/${BUNNY_STORAGE_ZONE}/${path}`
       const response = await fetch(uploadUrl, {
         method: 'PUT',
         headers: {
           AccessKey: BUNNY_API_KEY,
           'Content-Type': mimeType,
+          'Content-Length': String(fileStats.size),
         },
-        body: fileBuffer,
-      })
+        body: fileStream,
+        duplex: 'half',
+      } as StreamRequestInit)
 
       if (!response.ok) {
         const upstreamBody = await response.text().catch(() => '')
