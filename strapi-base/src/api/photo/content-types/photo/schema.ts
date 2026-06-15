@@ -83,11 +83,5 @@ export default {
       type: 'email',
       private: true,
     },
-    uploadToken: {
-      type: 'relation',
-      relation: 'manyToOne',
-      target: 'api::upload-token.upload-token',
-      inversedBy: 'photos',
-    },
   },
 }

@@ -13,7 +13,6 @@
     "strapi": "strapi",
     "generate:types": "node scripts/generate-types.js",
     "sync:types": "node scripts/sync-types.js",
-    "token:generate": "node scripts/generate-upload-token.mjs",
     "check:cors": "bash scripts/check-cors.sh",
     "upgrade": "npx @strapi/upgrade latest",
     "upgrade:dry": "npx @strapi/upgrade latest --dry"

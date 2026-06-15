@@ -183,8 +183,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const moderationStatus = 'approved'
-
     try {
       for (const [index, item] of externalMedia.entries()) {
         if (!item.url || !item.mime) {
@@ -203,7 +201,7 @@ export async function POST(request: NextRequest) {
           slug: `${baseSlug}-${Date.now()}-${index + 1}`,
           authorName,
           visibility: 'public',
-          moderationStatus,
+          moderationStatus: 'approved',
           mediaType,
           externalUrl: item.url,
           externalMime: item.mime,
@@ -286,7 +284,6 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const moderationStatus = 'approved'
   const uploadedFileIds: number[] = []
 
   try {
@@ -328,40 +325,21 @@ export async function POST(request: NextRequest) {
         slug: `${baseSlug}-${Date.now()}-${index + 1}`,
         authorName,
         visibility: 'public',
-        moderationStatus,
+        moderationStatus: 'approved',
         mediaType: 'image',
         image: uploadedFile.id,
       }
 
-      let created = false
-
-      for (const payload of [photoPayloadBase]) {
-        try {
-          await tryCreatePhoto(
-            moderationStatus === 'approved'
-              ? ['/api/photos?status=published', '/api/photos']
-              : ['/api/photos'],
-            payload
-          )
-          created = true
-          break
-        } catch {
-          // Retry with alternate relation identifier.
-        }
-      }
-
-      if (!created) {
-        throw new Error("Impossible de créer l'entrée photo dans Strapi.")
-      }
+      await tryCreatePhoto(
+        ['/api/photos?status=published', '/api/photos'],
+        photoPayloadBase
+      )
     }
 
     return NextResponse.json(
       {
         ok: true,
-        message:
-          moderationStatus === 'approved'
-            ? `${files.length} média(s) publié(s) avec succès.`
-            : `${files.length} média(s) reçu(s). Ils seront visibles après validation.`,
+        message: `${files.length} média(s) publié(s) avec succès.`,
       },
       { status: 201 }
     )

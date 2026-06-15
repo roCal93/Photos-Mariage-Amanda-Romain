@@ -147,11 +147,6 @@ export default {
         }
       }
     },
-    "privacyPolicy": {
-      "type": "relation",
-      "relation": "oneToOne",
-      "target": "api::privacy-policy.privacy-policy"
-    },
     "blockAlignment": {
       "type": "enumeration",
       "enum": [

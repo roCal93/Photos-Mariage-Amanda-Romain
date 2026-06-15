@@ -2,8 +2,6 @@
 
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/Button'
-import PrivacyPolicyModal from '@/components/shared/PrivacyPolicyModal'
-import { StrapiEntity, PrivacyPolicy } from '@/types/strapi'
 import Cookies from 'js-cookie'
 
 type ContactFormBlockProps = {
@@ -25,8 +23,6 @@ type ContactFormBlockProps = {
   consentRequiredText?: string
   blockAlignment?: 'left' | 'center' | 'right' | 'full'
   maxWidth?: 'small' | 'medium' | 'large' | 'full'
-  // Relation vers Privacy Policy
-  privacyPolicy?: PrivacyPolicy & StrapiEntity
 }
 
 const ContactFormBlock = ({
@@ -48,7 +44,6 @@ const ContactFormBlock = ({
   consentRequiredText,
   blockAlignment = 'center',
   maxWidth = 'medium',
-  privacyPolicy,
 }: ContactFormBlockProps) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -62,7 +57,6 @@ const ContactFormBlock = ({
   const [submitStatus, setSubmitStatus] = useState<
     'idle' | 'success' | 'error'
   >('idle')
-  const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false)
 
   const blockAlignmentClasses = {
     left: 'mr-auto',
@@ -141,13 +135,18 @@ const ContactFormBlock = ({
         )}
 
         {description && (
-          <p className="text-neutral-700 mb-8 whitespace-pre-line">{description}</p>
+          <p className="text-neutral-700 mb-8 whitespace-pre-line">
+            {description}
+          </p>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <label htmlFor="name" className="text-sm font-medium text-neutral-800">
+              <label
+                htmlFor="name"
+                className="text-sm font-medium text-neutral-800"
+              >
                 {nameLabel} *
               </label>
               <input
@@ -163,7 +162,10 @@ const ContactFormBlock = ({
             </div>
 
             <div className="flex flex-col gap-2">
-              <label htmlFor="email" className="text-sm font-medium text-neutral-800">
+              <label
+                htmlFor="email"
+                className="text-sm font-medium text-neutral-800"
+              >
                 {emailLabel} *
               </label>
               <input
@@ -197,7 +199,10 @@ const ContactFormBlock = ({
           />
 
           <div className="flex flex-col gap-2">
-            <label htmlFor="message" className="text-sm font-medium text-neutral-800">
+            <label
+              htmlFor="message"
+              className="text-sm font-medium text-neutral-800"
+            >
               {messageLabel} *
             </label>
             <textarea
@@ -224,15 +229,7 @@ const ContactFormBlock = ({
                 className="mt-1 h-4 w-4 rounded border border-neutral-300 text-neutral-900 focus:ring-neutral-900/60"
               />
               <label htmlFor="consent" className="text-sm text-neutral-800">
-                {consentText}{' '}
-                <button
-                  type="button"
-                  onClick={() => setIsPolicyModalOpen(true)}
-                  className="underline underline-offset-2 transition-colors hover:text-neutral-700"
-                >
-                  {policyLinkText}
-                </button>
-                . *
+                {[consentText, policyLinkText].filter(Boolean).join(' ')}. *
               </label>
             </div>
 
@@ -277,15 +274,6 @@ const ContactFormBlock = ({
           )}
         </form>
       </div>
-
-      <PrivacyPolicyModal
-        isOpen={isPolicyModalOpen}
-        onClose={() => setIsPolicyModalOpen(false)}
-        title={privacyPolicy?.title}
-        content={privacyPolicy?.content}
-        lastUpdated={(privacyPolicy as { lastUpdated?: string } | undefined)?.lastUpdated}
-        closeButtonText={privacyPolicy?.closeButtonText}
-      />
     </div>
   )
 }

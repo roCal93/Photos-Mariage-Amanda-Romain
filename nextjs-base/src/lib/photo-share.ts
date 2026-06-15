@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import { cleanImageUrl } from '@/lib/strapi'
 import { createStrapiClient } from '@/lib/strapi-client'
 import type {
@@ -41,16 +40,6 @@ export type PhotoRecord = {
   moderationStatus: 'pending' | 'approved' | 'rejected'
   image?: StrapiMedia | null
   createdAt?: string
-}
-
-export type UploadTokenRecord = {
-  label: string
-  tokenHash?: string
-  isActive: boolean
-  expiresAt?: string | null
-  maxUploads?: number | null
-  uploadCount?: number | null
-  requireModeration: boolean
 }
 
 function getPublicClient() {
@@ -190,60 +179,6 @@ export async function getPublicPhotoBySlug(slug: string) {
 
   const photo = response.data[0]
   return photo ? normalizePhoto(photo) : null
-}
-
-export function hashUploadToken(token: string) {
-  return createHash('sha256').update(token.trim()).digest('hex')
-}
-
-export function isUploadTokenOpen(
-  token: (UploadTokenRecord & StrapiEntity) | null
-) {
-  if (!token || !token.isActive) return false
-  if (token.expiresAt && new Date(token.expiresAt).getTime() < Date.now()) {
-    return false
-  }
-
-  return true
-}
-
-export async function getUploadTokenRecord(token: string) {
-  const service = getServiceClient()
-  const response = await service.findMany<UploadTokenRecord>('upload-tokens', {
-    fields: [
-      'label',
-      'isActive',
-      'expiresAt',
-      'maxUploads',
-      'uploadCount',
-      'requireModeration',
-      'tokenHash',
-    ],
-    filters: {
-      tokenHash: { $eq: hashUploadToken(token) },
-    },
-    pagination: { pageSize: 1 },
-    next: { revalidate: 0 },
-  })
-
-  return response.data[0] ?? null
-}
-
-export async function getUploadTokenSummary(token: string) {
-  const record = await getUploadTokenRecord(token)
-  if (!record) return null
-
-  return {
-    id: record.id,
-    documentId: record.documentId,
-    label: record.label,
-    isActive: record.isActive,
-    expiresAt: record.expiresAt,
-    maxUploads: record.maxUploads ?? null,
-    uploadCount: record.uploadCount ?? 0,
-    requireModeration: record.requireModeration,
-    isOpen: isUploadTokenOpen(record),
-  }
 }
 
 export type PhotoListResponse = StrapiCollectionResponse<PhotoRecord>

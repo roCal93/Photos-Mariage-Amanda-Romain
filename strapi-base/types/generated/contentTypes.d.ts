@@ -718,10 +718,6 @@ export interface ApiPhotoPhoto extends Struct.CollectionTypeSchema {
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    uploadToken: Schema.Attribute.Relation<
-      'manyToOne',
-      'api::upload-token.upload-token'
-    >;
     visibility: Schema.Attribute.Enumeration<['public', 'hidden']> &
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<'public'>;
@@ -891,67 +887,6 @@ export interface ApiSectionSection extends Struct.CollectionTypeSchema {
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-  };
-}
-
-export interface ApiUploadTokenUploadToken extends Struct.CollectionTypeSchema {
-  collectionName: 'upload_tokens';
-  info: {
-    description: "Lien d'upload public signe pour deposer des photos";
-    displayName: 'Upload Token';
-    pluralName: 'upload-tokens';
-    singularName: 'upload-token';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  pluginOptions: {
-    i18n: {
-      localized: false;
-    };
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    expiresAt: Schema.Attribute.DateTime;
-    isActive: Schema.Attribute.Boolean &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<true>;
-    label: Schema.Attribute.String & Schema.Attribute.Required;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::upload-token.upload-token'
-    > &
-      Schema.Attribute.Private;
-    maxUploads: Schema.Attribute.Integer &
-      Schema.Attribute.SetMinMax<
-        {
-          min: 1;
-        },
-        number
-      > &
-      Schema.Attribute.DefaultTo<25>;
-    photos: Schema.Attribute.Relation<'oneToMany', 'api::photo.photo'>;
-    publishedAt: Schema.Attribute.DateTime;
-    requireModeration: Schema.Attribute.Boolean &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<true>;
-    tokenHash: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.Unique;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    uploadCount: Schema.Attribute.Integer &
-      Schema.Attribute.SetMinMax<
-        {
-          min: 0;
-        },
-        number
-      > &
-      Schema.Attribute.DefaultTo<0>;
   };
 }
 
@@ -1619,7 +1554,6 @@ declare module '@strapi/strapi' {
       'api::photo.photo': ApiPhotoPhoto;
       'api::privacy-policy.privacy-policy': ApiPrivacyPolicyPrivacyPolicy;
       'api::section.section': ApiSectionSection;
-      'api::upload-token.upload-token': ApiUploadTokenUploadToken;
       'api::work-category.work-category': ApiWorkCategoryWorkCategory;
       'api::work-item.work-item': ApiWorkItemWorkItem;
       'plugin::content-releases.release': PluginContentReleasesRelease;
