@@ -53,7 +53,7 @@ export default async function PhotosPage({
             <div className="relative overflow-hidden rounded-[2rem] border border-dashed border-stone-300 bg-stone-50 p-10 text-center text-stone-600">
               <WeddingRsvpCardBackground />
               <div className="relative z-10">
-                Aucun média publié pour le moment.
+                Rien à voir ici pour le moment.
               </div>
             </div>
           ) : (
