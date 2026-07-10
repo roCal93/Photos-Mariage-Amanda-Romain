@@ -6,6 +6,7 @@ import {
   WeddingRsvpCardBackground,
 } from '@/components/photo-share/WeddingRsvpBackground'
 import { getPublicPhotos } from '@/lib/photo-share'
+import { loadMorePhotos } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,7 +58,19 @@ export default async function PhotosPage({
               </div>
             </div>
           ) : (
-            <PhotoGalleryGrid locale={locale} photos={response.data} />
+            <PhotoGalleryGrid
+              locale={locale}
+              photos={response.data}
+              pagination={
+                response.meta.pagination ?? {
+                  page: 1,
+                  pageCount: 1,
+                  pageSize: 24,
+                  total: response.data.length,
+                }
+              }
+              loadMore={loadMorePhotos}
+            />
           )}
         </div>
       </section>

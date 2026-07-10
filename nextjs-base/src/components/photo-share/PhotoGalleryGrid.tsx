@@ -5,6 +5,13 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { WeddingRsvpCardBackground } from '@/components/photo-share/WeddingRsvpBackground'
 
+type PaginationMeta = {
+  page: number
+  pageSize: number
+  pageCount: number
+  total: number
+}
+
 type GalleryPhoto = {
   documentId?: string
   title: string
@@ -28,6 +35,10 @@ type GalleryPhoto = {
 type PhotoGalleryGridProps = {
   locale: string
   photos: GalleryPhoto[]
+  pagination: PaginationMeta
+  loadMore: (
+    page: number
+  ) => Promise<{ data: GalleryPhoto[]; meta: { pagination?: PaginationMeta } }>
 }
 
 function isVideo(mime?: string) {
@@ -111,14 +122,41 @@ async function triggerDownload(url: string, fileName: string) {
   }
 }
 
-export function PhotoGalleryGrid({ locale, photos }: PhotoGalleryGridProps) {
+export function PhotoGalleryGrid({
+  locale,
+  photos: initialPhotos,
+  pagination: initialPagination,
+  loadMore,
+}: PhotoGalleryGridProps) {
+  const [allPhotos, setAllPhotos] = useState<GalleryPhoto[]>(initialPhotos)
+  const [pagination, setPagination] =
+    useState<PaginationMeta>(initialPagination)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
   const [downloading, setDownloading] = useState(false)
 
+  const hasMore = pagination.page < pagination.pageCount
+
+  async function handleLoadMore() {
+    if (loadingMore || !hasMore) return
+    setLoadingMore(true)
+    try {
+      const result = await loadMore(pagination.page + 1)
+      setAllPhotos((prev) => [...prev, ...result.data])
+      if (result.meta.pagination) {
+        setPagination(result.meta.pagination)
+      }
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
   const selectedPhotos = useMemo(
     () =>
-      photos.filter((photo) => selectedKeys.includes(getSelectionKey(photo))),
-    [photos, selectedKeys]
+      allPhotos.filter((photo) =>
+        selectedKeys.includes(getSelectionKey(photo))
+      ),
+    [allPhotos, selectedKeys]
   )
 
   function toggleSelection(key: string) {
@@ -130,7 +168,7 @@ export function PhotoGalleryGrid({ locale, photos }: PhotoGalleryGridProps) {
   }
 
   function selectAll() {
-    setSelectedKeys(photos.map(getSelectionKey))
+    setSelectedKeys(allPhotos.map(getSelectionKey))
   }
 
   function clearSelection() {
@@ -157,7 +195,7 @@ export function PhotoGalleryGrid({ locale, photos }: PhotoGalleryGridProps) {
   }
 
   async function downloadAll() {
-    await downloadPhotos(photos)
+    await downloadPhotos(allPhotos)
   }
 
   return (
@@ -166,7 +204,9 @@ export function PhotoGalleryGrid({ locale, photos }: PhotoGalleryGridProps) {
         <WeddingRsvpCardBackground />
         <div className="relative z-10 flex flex-wrap items-center gap-3">
           <span className="text-sm font-medium text-stone-700">
-            {selectedKeys.length} fichier(s) sélectionné(s) sur {photos.length}
+            {selectedKeys.length} fichier(s) sélectionné(s) sur{' '}
+            {allPhotos.length}
+            {hasMore ? ` (${pagination.total} au total)` : ''}
           </span>
           <button
             type="button"
@@ -186,12 +226,12 @@ export function PhotoGalleryGrid({ locale, photos }: PhotoGalleryGridProps) {
           <button
             type="button"
             onClick={downloadAll}
-            disabled={photos.length === 0 || downloading}
+            disabled={allPhotos.length === 0 || downloading}
             className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-950 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {downloading
               ? 'Téléchargement...'
-              : `Télécharger tout (${photos.length})`}
+              : `Télécharger tout (${allPhotos.length})`}
           </button>
           <button
             type="button"
@@ -207,7 +247,7 @@ export function PhotoGalleryGrid({ locale, photos }: PhotoGalleryGridProps) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {photos.map((photo) => {
+        {allPhotos.map((photo) => {
           const key = getSelectionKey(photo)
           const selected = selectedKeys.includes(key)
 
@@ -280,6 +320,21 @@ export function PhotoGalleryGrid({ locale, photos }: PhotoGalleryGridProps) {
           )
         })}
       </div>
+
+      {hasMore && (
+        <div className="mt-10 flex justify-center">
+          <button
+            type="button"
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            className="rounded-full border border-stone-300 px-8 py-3 text-sm font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-950 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loadingMore
+              ? 'Chargement...'
+              : `Charger plus (${pagination.total - allPhotos.length} restant${pagination.total - allPhotos.length > 1 ? 's' : ''})`}
+          </button>
+        </div>
+      )}
     </>
   )
 }
