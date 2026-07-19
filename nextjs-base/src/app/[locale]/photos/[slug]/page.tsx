@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Layout } from '@/components/layout'
 import { BackToGalleryButton } from '@/components/photo-share/BackToGalleryButton'
+import { GalleryNavSync } from '@/components/photo-share/GalleryNavSync'
 import { WeddingRsvpBackground } from '@/components/photo-share/WeddingRsvpBackground'
 import { getPhotoNavSlugs, getPublicPhotoBySlug } from '@/lib/photo-share'
 
@@ -70,6 +71,7 @@ export default async function PhotoDetailPage({
   }
 
   const currentIndex = allSlugs.findIndex((s) => s === slug)
+  const galleryPage = currentIndex >= 0 ? Math.ceil((currentIndex + 1) / 24) : 1
   const previousSlug = currentIndex > 0 ? allSlugs[currentIndex - 1] : null
   const nextSlug =
     currentIndex >= 0 && currentIndex < allSlugs.length - 1
@@ -80,6 +82,7 @@ export default async function PhotoDetailPage({
     <Layout locale={locale}>
       <section className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,#374151_0%,#111827_32%,#020617_100%)] px-4 py-4 md:px-8 md:py-6">
         <WeddingRsvpBackground desktopColorClassName="bg-slate-950" />
+        <GalleryNavSync slug={slug} page={galleryPage} />
         <div className="relative z-10 mx-auto max-w-7xl">
           <BackToGalleryButton
             href={`/${locale}/photos`}

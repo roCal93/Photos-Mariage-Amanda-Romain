@@ -121,7 +121,7 @@ async function triggerDownload(url: string, fileName: string) {
 }
 
 const GALLERY_SESSION_PAGE = 'photo-gallery-page'
-const GALLERY_SESSION_SCROLL = 'photo-gallery-scroll-y'
+const GALLERY_SESSION_SLUG = 'photo-gallery-slug'
 
 export function PhotoGalleryGrid({
   locale,
@@ -144,6 +144,7 @@ export function PhotoGalleryGrid({
       ? Number(sessionStorage.getItem(GALLERY_SESSION_PAGE)) > 1
       : false
   )
+  const galleryPageSize = 24
 
   const hasMore = pagination.page < pagination.pageCount
 
@@ -161,20 +162,23 @@ export function PhotoGalleryGrid({
     }
   }, [hasMore, loadMore, loadingMore, pagination.page])
 
-  // Restore scroll position and pages loaded when coming back from a photo detail
+  // Restore the gallery position when coming back from a photo detail page
   useEffect(() => {
     const savedPage = Number(sessionStorage.getItem(GALLERY_SESSION_PAGE))
-    const savedScrollY = Number(sessionStorage.getItem(GALLERY_SESSION_SCROLL))
+    const savedSlug = sessionStorage.getItem(GALLERY_SESSION_SLUG)
 
     sessionStorage.removeItem(GALLERY_SESSION_PAGE)
-    sessionStorage.removeItem(GALLERY_SESSION_SCROLL)
+    sessionStorage.removeItem(GALLERY_SESSION_SLUG)
 
-    if (!savedScrollY) return
+    if (!savedSlug) return
+
+    const scrollToPhoto = () => {
+      const el = document.getElementById(`photo-${savedSlug}`)
+      el?.scrollIntoView({ block: 'center', behavior: 'instant' })
+    }
 
     if (!savedPage || savedPage <= 1) {
-      requestAnimationFrame(() => {
-        window.scrollTo({ top: savedScrollY, behavior: 'instant' })
-      })
+      requestAnimationFrame(() => scrollToPhoto())
       return
     }
 
@@ -195,9 +199,7 @@ export function PhotoGalleryGrid({
         isRestoringRef.current = false
         setLoadingMore(false)
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            window.scrollTo({ top: savedScrollY, behavior: 'instant' })
-          })
+          requestAnimationFrame(() => scrollToPhoto())
         })
       }
     }
@@ -335,6 +337,7 @@ export function PhotoGalleryGrid({
           return (
             <div
               key={key}
+              id={`photo-${photo.slug}`}
               className={getCardSpanClass(
                 photo.mediaType === 'video'
                   ? (photo.externalWidth ?? undefined)
@@ -361,14 +364,15 @@ export function PhotoGalleryGrid({
                 <Link
                   href={`/${locale}/photos/${photo.slug}`}
                   onClick={() => {
-                    sessionStorage.setItem(
-                      GALLERY_SESSION_PAGE,
-                      String(pagination.page)
+                    const idx = allPhotos.findIndex(
+                      (p) => getSelectionKey(p) === key
                     )
-                    sessionStorage.setItem(
-                      GALLERY_SESSION_SCROLL,
-                      String(Math.round(window.scrollY))
-                    )
+                    const page =
+                      idx >= 0
+                        ? Math.ceil((idx + 1) / galleryPageSize)
+                        : pagination.page
+                    sessionStorage.setItem(GALLERY_SESSION_PAGE, String(page))
+                    sessionStorage.setItem(GALLERY_SESSION_SLUG, photo.slug)
                   }}
                   className="group block overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-[0_24px_80px_-48px_rgba(15,23,42,0.45)] transition hover:-translate-y-1 hover:shadow-[0_32px_90px_-44px_rgba(15,23,42,0.5)]"
                 >
