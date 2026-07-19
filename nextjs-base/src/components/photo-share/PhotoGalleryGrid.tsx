@@ -57,12 +57,10 @@ function getMediaUrl(photo: GalleryPhoto) {
 
 function getCardSpanClass(width?: number, height?: number) {
   if (!width || !height) {
-    return 'sm:col-span-1 xl:col-span-1'
+    return 'col-span-1'
   }
 
-  return width > height
-    ? 'sm:col-span-2 xl:col-span-2'
-    : 'sm:col-span-1 xl:col-span-1'
+  return width > height ? 'col-span-2' : 'col-span-1'
 }
 
 function getSelectionKey(photo: GalleryPhoto) {
@@ -322,7 +320,7 @@ export function PhotoGalleryGrid({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         {allPhotos.map((photo) => {
           const key = getSelectionKey(photo)
           const selected = selectedKeys.includes(key)
