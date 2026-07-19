@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { Layout } from '@/components/layout'
 import { BackToGalleryButton } from '@/components/photo-share/BackToGalleryButton'
 import { WeddingRsvpBackground } from '@/components/photo-share/WeddingRsvpBackground'
-import { getPublicPhotoBySlug, getPublicPhotos } from '@/lib/photo-share'
+import { getPhotoNavSlugs, getPublicPhotoBySlug } from '@/lib/photo-share'
 
 function isVideo(mime?: string) {
   return typeof mime === 'string' && mime.startsWith('video/')
@@ -60,20 +60,20 @@ export default async function PhotoDetailPage({
   params: Promise<{ locale: string; slug: string }>
 }) {
   const { locale, slug } = await params
-  const [photo, allMedia] = await Promise.all([
+  const [photo, allSlugs] = await Promise.all([
     getPublicPhotoBySlug(slug),
-    getPublicPhotos(1, 200),
+    getPhotoNavSlugs(),
   ])
 
   if (!photo) {
     notFound()
   }
 
-  const currentIndex = allMedia.data.findIndex((item) => item.slug === slug)
-  const previousItem = currentIndex > 0 ? allMedia.data[currentIndex - 1] : null
-  const nextItem =
-    currentIndex >= 0 && currentIndex < allMedia.data.length - 1
-      ? allMedia.data[currentIndex + 1]
+  const currentIndex = allSlugs.findIndex((s) => s === slug)
+  const previousSlug = currentIndex > 0 ? allSlugs[currentIndex - 1] : null
+  const nextSlug =
+    currentIndex >= 0 && currentIndex < allSlugs.length - 1
+      ? allSlugs[currentIndex + 1]
       : null
 
   return (
@@ -91,9 +91,9 @@ export default async function PhotoDetailPage({
 
         <div className="relative z-10 mx-auto mt-4 max-w-7xl overflow-hidden bg-transparent shadow-none">
           <div className="relative h-[82vh] min-h-[420px] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0)_58%)]">
-            {previousItem ? (
+            {previousSlug ? (
               <Link
-                href={`/${locale}/photos/${previousItem.slug}`}
+                href={`/${locale}/photos/${previousSlug}`}
                 className="absolute left-4 top-1/2 z-10 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/25 text-3xl font-light text-white backdrop-blur transition hover:scale-105 hover:border-white/60 hover:bg-black/40 md:left-8"
                 aria-label="Média précédent"
               >
@@ -101,9 +101,9 @@ export default async function PhotoDetailPage({
               </Link>
             ) : null}
 
-            {nextItem ? (
+            {nextSlug ? (
               <Link
-                href={`/${locale}/photos/${nextItem.slug}`}
+                href={`/${locale}/photos/${nextSlug}`}
                 className="absolute right-4 top-1/2 z-10 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/25 text-3xl font-light text-white backdrop-blur transition hover:scale-105 hover:border-white/60 hover:bg-black/40 md:right-8"
                 aria-label="Média suivant"
               >

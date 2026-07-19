@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { checkRateLimit, getClientIpFromHeaders } from '@/lib/rate-limit'
 
 const STRAPI_URL = process.env.STRAPI_URL || process.env.NEXT_PUBLIC_STRAPI_URL
 
@@ -7,6 +8,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: 'Configuration serveur incomplète pour bunny-upload.' },
       { status: 500 }
+    )
+  }
+
+  const clientIp = getClientIpFromHeaders(request.headers)
+  const rateLimit = await checkRateLimit({
+    key: `bunny-upload:${clientIp}`,
+    limit: 20,
+    windowMs: 10 * 60 * 1000,
+  })
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Trop de tentatives. Réessaie dans quelques minutes.' },
+      { status: 429 }
     )
   }
 

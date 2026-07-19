@@ -187,6 +187,7 @@ export function UploadPhotoForm() {
     setUploadPhase('uploading')
     setUploadProgress(0)
     setUploadedFilesCount(0)
+    setTotalFilesCount(0)
 
     const form = event.currentTarget
     const body = new FormData(form)

@@ -181,4 +181,24 @@ export async function getPublicPhotoBySlug(slug: string) {
   return photo ? normalizePhoto(photo) : null
 }
 
+/**
+ * Lightweight query: only fetches slugs for prev/next navigation in the detail page.
+ * Uses a high pageSize to avoid breaking nav when the gallery grows.
+ */
+export async function getPhotoNavSlugs(pageSize = 1000) {
+  const client = getPublicClient()
+  const response = await client.findMany<PhotoRecord>('photos', {
+    fields: ['slug'],
+    filters: {
+      visibility: { $eq: 'public' },
+      moderationStatus: { $eq: 'approved' },
+    },
+    sort: ['takenAt:desc', 'createdAt:desc'],
+    pagination: { pageSize },
+    publicationState: 'live',
+    next: { revalidate: 60 },
+  })
+  return response.data.map((p) => p.slug)
+}
+
 export type PhotoListResponse = StrapiCollectionResponse<PhotoRecord>
