@@ -241,26 +241,54 @@ export function PhotoGalleryGrid({
     setSelectedKeys([])
   }
 
-  function downloadPhotos(photosToDownload: GalleryPhoto[]) {
+  async function downloadPhotos(photosToDownload: GalleryPhoto[]) {
     if (photosToDownload.length === 0) return
-
     setDownloading(true)
-    // All anchor clicks are synchronous so they stay within the user gesture
-    // context — mobile browsers block programmatic clicks after an `await`.
-    for (const [index, photo] of photosToDownload.entries()) {
-      const mediaUrl = getMediaUrl(photo)
-      if (!mediaUrl) continue
-      triggerDownload(mediaUrl, getDownloadName(photo, index))
+    try {
+      if (photosToDownload.length === 1) {
+        // Single file: synchronous same-origin proxy click — works on all mobile browsers
+        const photo = photosToDownload[0]!
+        const mediaUrl = getMediaUrl(photo)
+        if (mediaUrl) triggerDownload(mediaUrl, getDownloadName(photo, 0))
+        return
+      }
+
+      // Multiple files: generate a ZIP server-side and trigger a single download
+      const files = photosToDownload
+        .map((photo, index) => ({
+          url: getMediaUrl(photo),
+          name: getDownloadName(photo, index),
+        }))
+        .filter((f) => Boolean(f.url))
+
+      const response = await fetch('/api/download-zip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files }),
+      })
+
+      if (!response.ok) throw new Error('ZIP failed')
+
+      const blob = await response.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = blobUrl
+      anchor.download = 'photos.zip'
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      URL.revokeObjectURL(blobUrl)
+    } finally {
+      setDownloading(false)
     }
-    setDownloading(false)
   }
 
-  function downloadSelection() {
-    downloadPhotos(selectedPhotos)
+  async function downloadSelection() {
+    await downloadPhotos(selectedPhotos)
   }
 
-  function downloadAll() {
-    downloadPhotos(allPhotos)
+  async function downloadAll() {
+    await downloadPhotos(allPhotos)
   }
 
   return (
