@@ -91,33 +91,16 @@ function getDownloadName(photo: GalleryPhoto, index: number) {
   return `${fallbackBaseName}.${extension}`
 }
 
-async function triggerDownload(url: string, fileName: string) {
-  try {
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(`DOWNLOAD_${response.status}`)
-    }
-
-    const blob = await response.blob()
-    const blobUrl = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = blobUrl
-    anchor.download = fileName
-    document.body.appendChild(anchor)
-    anchor.click()
-    anchor.remove()
-    URL.revokeObjectURL(blobUrl)
-    return
-  } catch {
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = fileName
-    anchor.target = '_blank'
-    anchor.rel = 'noreferrer'
-    document.body.appendChild(anchor)
-    anchor.click()
-    anchor.remove()
-  }
+function triggerDownload(url: string, fileName: string) {
+  // Route through our same-origin proxy so iOS Safari respects the
+  // `download` attribute (cross-origin URLs are silently ignored on iOS).
+  const proxyUrl = `/api/download?${new URLSearchParams({ url, name: fileName }).toString()}`
+  const anchor = document.createElement('a')
+  anchor.href = proxyUrl
+  anchor.download = fileName
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
 }
 
 const GALLERY_SESSION_PAGE = 'photo-gallery-page'
@@ -258,27 +241,26 @@ export function PhotoGalleryGrid({
     setSelectedKeys([])
   }
 
-  async function downloadPhotos(photosToDownload: GalleryPhoto[]) {
+  function downloadPhotos(photosToDownload: GalleryPhoto[]) {
     if (photosToDownload.length === 0) return
 
     setDownloading(true)
-    try {
-      for (const [index, photo] of photosToDownload.entries()) {
-        const mediaUrl = getMediaUrl(photo)
-        if (!mediaUrl) continue
-        await triggerDownload(mediaUrl, getDownloadName(photo, index))
-      }
-    } finally {
-      setDownloading(false)
+    // All anchor clicks are synchronous so they stay within the user gesture
+    // context — mobile browsers block programmatic clicks after an `await`.
+    for (const [index, photo] of photosToDownload.entries()) {
+      const mediaUrl = getMediaUrl(photo)
+      if (!mediaUrl) continue
+      triggerDownload(mediaUrl, getDownloadName(photo, index))
     }
+    setDownloading(false)
   }
 
-  async function downloadSelection() {
-    await downloadPhotos(selectedPhotos)
+  function downloadSelection() {
+    downloadPhotos(selectedPhotos)
   }
 
-  async function downloadAll() {
-    await downloadPhotos(allPhotos)
+  function downloadAll() {
+    downloadPhotos(allPhotos)
   }
 
   return (
