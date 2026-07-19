@@ -122,6 +122,9 @@ async function triggerDownload(url: string, fileName: string) {
   }
 }
 
+const GALLERY_SESSION_PAGE = 'photo-gallery-page'
+const GALLERY_SESSION_SCROLL = 'photo-gallery-scroll-y'
+
 export function PhotoGalleryGrid({
   locale,
   photos: initialPhotos,
@@ -135,6 +138,8 @@ export function PhotoGalleryGrid({
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
   const [downloading, setDownloading] = useState(false)
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
+  const loadMoreRef = useRef(loadMore)
+  loadMoreRef.current = loadMore
 
   const hasMore = pagination.page < pagination.pageCount
 
@@ -151,6 +156,50 @@ export function PhotoGalleryGrid({
       setLoadingMore(false)
     }
   }, [hasMore, loadMore, loadingMore, pagination.page])
+
+  // Restore scroll position and pages loaded when coming back from a photo detail
+  useEffect(() => {
+    const savedPage = Number(sessionStorage.getItem(GALLERY_SESSION_PAGE))
+    const savedScrollY = Number(sessionStorage.getItem(GALLERY_SESSION_SCROLL))
+
+    sessionStorage.removeItem(GALLERY_SESSION_PAGE)
+    sessionStorage.removeItem(GALLERY_SESSION_SCROLL)
+
+    if (!savedScrollY) return
+
+    if (!savedPage || savedPage <= 1) {
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: savedScrollY, behavior: 'instant' })
+      })
+      return
+    }
+
+    setLoadingMore(true)
+
+    async function restorePages() {
+      try {
+        let page = 1
+        while (page < savedPage) {
+          const result = await loadMoreRef.current(page + 1)
+          setAllPhotos((prev) => [...prev, ...result.data])
+          if (result.meta.pagination) {
+            setPagination(result.meta.pagination)
+          }
+          page++
+        }
+      } finally {
+        setLoadingMore(false)
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            window.scrollTo({ top: savedScrollY, behavior: 'instant' })
+          })
+        })
+      }
+    }
+
+    void restorePages()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!hasMore) return
@@ -306,6 +355,16 @@ export function PhotoGalleryGrid({
 
                 <Link
                   href={`/${locale}/photos/${photo.slug}`}
+                  onClick={() => {
+                    sessionStorage.setItem(
+                      GALLERY_SESSION_PAGE,
+                      String(pagination.page)
+                    )
+                    sessionStorage.setItem(
+                      GALLERY_SESSION_SCROLL,
+                      String(Math.round(window.scrollY))
+                    )
+                  }}
                   className="group block overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-[0_24px_80px_-48px_rgba(15,23,42,0.45)] transition hover:-translate-y-1 hover:shadow-[0_32px_90px_-44px_rgba(15,23,42,0.5)]"
                 >
                   <div className="relative h-80 bg-stone-100 md:h-[26rem] xl:h-[30rem]">
