@@ -138,11 +138,17 @@ export function PhotoGalleryGrid({
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
   const loadMoreRef = useRef(loadMore)
   loadMoreRef.current = loadMore
+  // Synchronously initialized: prevents IntersectionObserver from firing during restore
+  const isRestoringRef = useRef(
+    typeof window !== 'undefined'
+      ? Number(sessionStorage.getItem(GALLERY_SESSION_PAGE)) > 1
+      : false
+  )
 
   const hasMore = pagination.page < pagination.pageCount
 
   const handleLoadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return
+    if (loadingMore || !hasMore || isRestoringRef.current) return
     setLoadingMore(true)
     try {
       const result = await loadMore(pagination.page + 1)
@@ -186,6 +192,7 @@ export function PhotoGalleryGrid({
           page++
         }
       } finally {
+        isRestoringRef.current = false
         setLoadingMore(false)
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
