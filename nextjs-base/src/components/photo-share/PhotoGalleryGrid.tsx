@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { WeddingRsvpCardBackground } from '@/components/photo-share/WeddingRsvpBackground'
 
 type PaginationMeta = {
@@ -134,10 +134,11 @@ export function PhotoGalleryGrid({
   const [loadingMore, setLoadingMore] = useState(false)
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
   const [downloading, setDownloading] = useState(false)
+  const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
 
   const hasMore = pagination.page < pagination.pageCount
 
-  async function handleLoadMore() {
+  const handleLoadMore = useCallback(async () => {
     if (loadingMore || !hasMore) return
     setLoadingMore(true)
     try {
@@ -149,7 +150,33 @@ export function PhotoGalleryGrid({
     } finally {
       setLoadingMore(false)
     }
-  }
+  }, [hasMore, loadMore, loadingMore, pagination.page])
+
+  useEffect(() => {
+    if (!hasMore) return
+
+    const node = loadMoreTriggerRef.current
+    if (!node) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const firstEntry = entries[0]
+        if (!firstEntry?.isIntersecting) return
+        void handleLoadMore()
+      },
+      {
+        root: null,
+        rootMargin: '320px 0px',
+        threshold: 0,
+      }
+    )
+
+    observer.observe(node)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [hasMore, handleLoadMore])
 
   const selectedPhotos = useMemo(
     () =>
@@ -322,17 +349,20 @@ export function PhotoGalleryGrid({
       </div>
 
       {hasMore && (
-        <div className="mt-10 flex justify-center">
-          <button
-            type="button"
-            onClick={handleLoadMore}
-            disabled={loadingMore}
-            className="rounded-full border border-stone-300 px-8 py-3 text-sm font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-950 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loadingMore
-              ? 'Chargement...'
-              : `Charger plus (${pagination.total - allPhotos.length} restant${pagination.total - allPhotos.length > 1 ? 's' : ''})`}
-          </button>
+        <div className="mt-10">
+          <div ref={loadMoreTriggerRef} className="h-1 w-full" />
+          <div className="mt-4 flex justify-center">
+            <button
+              type="button"
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="rounded-full border border-stone-300 px-8 py-3 text-sm font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-950 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loadingMore
+                ? 'Chargement...'
+                : `Charger plus (${pagination.total - allPhotos.length} restant${pagination.total - allPhotos.length > 1 ? 's' : ''})`}
+            </button>
+          </div>
         </div>
       )}
     </>
