@@ -182,23 +182,37 @@ export async function getPublicPhotoBySlug(slug: string) {
 }
 
 /**
- * Lightweight query: only fetches slugs for prev/next navigation in the detail page.
- * Uses a high pageSize to avoid breaking nav when the gallery grows.
+ * Fetches all public photo slugs in gallery order for prev/next navigation.
+ * Paginates in chunks of 100 (Strapi's maxLimit) so the full list is always
+ * complete regardless of the total number of photos.
  */
-export async function getPhotoNavSlugs(pageSize = 1000) {
+export async function getPhotoNavSlugs() {
   const client = getPublicClient()
-  const response = await client.findMany<PhotoRecord>('photos', {
-    fields: ['slug'],
-    filters: {
-      visibility: { $eq: 'public' },
-      moderationStatus: { $eq: 'approved' },
-    },
-    sort: ['takenAt:desc', 'createdAt:desc'],
-    pagination: { pageSize },
-    publicationState: 'live',
-    next: { revalidate: 60 },
-  })
-  return response.data.map((p) => p.slug)
+  const allSlugs: string[] = []
+  let page = 1
+  const pageSize = 100 // matches Strapi maxLimit in config/api.ts
+
+  while (true) {
+    const response = await client.findMany<PhotoRecord>('photos', {
+      fields: ['slug'],
+      filters: {
+        visibility: { $eq: 'public' },
+        moderationStatus: { $eq: 'approved' },
+      },
+      sort: ['takenAt:desc', 'createdAt:desc'],
+      pagination: { page, pageSize },
+      publicationState: 'live',
+      next: { revalidate: 60 },
+    })
+
+    allSlugs.push(...response.data.map((p) => p.slug))
+
+    const meta = response.meta.pagination
+    if (!meta || page >= meta.pageCount) break
+    page++
+  }
+
+  return allSlugs
 }
 
 export type PhotoListResponse = StrapiCollectionResponse<PhotoRecord>
