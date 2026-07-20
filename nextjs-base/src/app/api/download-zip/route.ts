@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
         if (!isAllowedUrl(file.url, allowedHosts)) continue
 
         // Deduplicate filenames
-        let name = (file.name || 'file')
+        const name = (file.name || 'file')
           .replace(/[^\w\-. ]/g, '_')
           .slice(0, 200)
         let deduped = name

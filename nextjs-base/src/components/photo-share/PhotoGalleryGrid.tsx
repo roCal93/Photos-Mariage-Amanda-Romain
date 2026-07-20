@@ -118,9 +118,9 @@ export function PhotoGalleryGrid({
   const [loadingMore, setLoadingMore] = useState(false)
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
   const [downloading, setDownloading] = useState(false)
+  const [preparingZip, setPreparingZip] = useState(false)
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
   const loadMoreRef = useRef(loadMore)
-  loadMoreRef.current = loadMore
   // Synchronously initialized: prevents IntersectionObserver from firing during restore
   const isRestoringRef = useRef(
     typeof window !== 'undefined'
@@ -130,6 +130,12 @@ export function PhotoGalleryGrid({
   const galleryPageSize = 24
 
   const hasMore = pagination.page < pagination.pageCount
+
+  // Keep the ref in sync with the latest loadMore without adding it to
+  // handleLoadMore's dependency array (avoids observer/effect re-subscriptions).
+  useEffect(() => {
+    loadMoreRef.current = loadMore
+  })
 
   const handleLoadMore = useCallback(async () => {
     if (loadingMore || !hasMore || isRestoringRef.current) return
@@ -165,9 +171,8 @@ export function PhotoGalleryGrid({
       return
     }
 
-    setLoadingMore(true)
-
     async function restorePages() {
+      setLoadingMore(true)
       try {
         let page = 1
         while (page < savedPage) {
@@ -188,7 +193,6 @@ export function PhotoGalleryGrid({
     }
 
     void restorePages()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -254,6 +258,7 @@ export function PhotoGalleryGrid({
       }
 
       // Multiple files: generate a ZIP server-side and trigger a single download
+      setPreparingZip(true)
       const files = photosToDownload
         .map((photo, index) => ({
           url: getMediaUrl(photo),
@@ -280,6 +285,7 @@ export function PhotoGalleryGrid({
       URL.revokeObjectURL(blobUrl)
     } finally {
       setDownloading(false)
+      setPreparingZip(false)
     }
   }
 
@@ -322,8 +328,8 @@ export function PhotoGalleryGrid({
             disabled={allPhotos.length === 0 || downloading}
             className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-950 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {downloading
-              ? 'Téléchargement...'
+            {preparingZip
+              ? 'En préparation...'
               : `Télécharger tout (${allPhotos.length})`}
           </button>
           <button
@@ -332,8 +338,8 @@ export function PhotoGalleryGrid({
             disabled={selectedKeys.length === 0 || downloading}
             className="rounded-full bg-stone-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {downloading
-              ? 'Téléchargement...'
+            {preparingZip
+              ? 'En préparation...'
               : `Télécharger la sélection${selectedKeys.length > 0 ? ` (${selectedKeys.length})` : ''}`}
           </button>
         </div>

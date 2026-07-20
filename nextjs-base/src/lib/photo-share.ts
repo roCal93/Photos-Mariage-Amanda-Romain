@@ -56,6 +56,7 @@ export function hasPhotoServiceTokenConfigured() {
   )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function getServiceClient() {
   const apiToken =
     normalizeOptionalToken(process.env.STRAPI_WRITE_API_TOKEN) ||
