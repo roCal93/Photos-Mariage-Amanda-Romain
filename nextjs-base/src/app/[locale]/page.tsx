@@ -8,6 +8,7 @@ import { WeddingRsvpBackground } from '@/components/photo-share/WeddingRsvpBackg
 import { PageCollectionResponse, StrapiBlock } from '@/types/strapi'
 import { DynamicBlock } from '@/types/custom'
 import Link from 'next/link'
+import { DEFAULT_STRAPI_URL } from '@/lib/constants'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,7 +18,7 @@ const fetchHomePageData = async (locale: string, isDraft: boolean) => {
     : process.env.STRAPI_API_TOKEN
 
   const client = createStrapiClient({
-    apiUrl: process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337',
+    apiUrl: process.env.NEXT_PUBLIC_STRAPI_URL || DEFAULT_STRAPI_URL,
     apiToken,
   })
 

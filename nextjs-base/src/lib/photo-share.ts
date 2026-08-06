@@ -1,6 +1,7 @@
 import { cleanImageUrl } from '@/lib/strapi'
 import { createStrapiClient } from '@/lib/strapi-client'
 import type {
+import { DEFAULT_STRAPI_URL } from './constants'
   StrapiCollectionResponse,
   StrapiEntity,
   StrapiMedia,
@@ -44,7 +45,7 @@ export type PhotoRecord = {
 
 function getPublicClient() {
   return createStrapiClient({
-    apiUrl: process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337',
+    apiUrl: process.env.NEXT_PUBLIC_STRAPI_URL || DEFAULT_STRAPI_URL,
     apiToken: normalizeOptionalToken(process.env.STRAPI_API_TOKEN),
   })
 }
@@ -69,7 +70,7 @@ function getServiceClient() {
   }
 
   return createStrapiClient({
-    apiUrl: process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337',
+    apiUrl: process.env.NEXT_PUBLIC_STRAPI_URL || DEFAULT_STRAPI_URL,
     apiToken,
   })
 }

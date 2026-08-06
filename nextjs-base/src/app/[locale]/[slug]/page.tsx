@@ -12,6 +12,7 @@ import { DynamicBlock } from '@/types/custom'
 import { notFound, redirect } from 'next/navigation'
 import { defaultLocale } from '@/lib/locales'
 import { isSupportedLocale } from '@/lib/supported-locales'
+import { DEFAULT_STRAPI_URL } from '@/lib/constants'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,7 +26,7 @@ const fetchPageData = async (
     : process.env.STRAPI_API_TOKEN
 
   const client = createStrapiClient({
-    apiUrl: process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337',
+    apiUrl: process.env.NEXT_PUBLIC_STRAPI_URL || DEFAULT_STRAPI_URL,
     apiToken,
   })
 
@@ -55,7 +56,7 @@ const fetchPageDataFallback = async (slug: string, isDraft: boolean) => {
     : process.env.STRAPI_API_TOKEN
 
   const client = createStrapiClient({
-    apiUrl: process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337',
+    apiUrl: process.env.NEXT_PUBLIC_STRAPI_URL || DEFAULT_STRAPI_URL,
     apiToken,
   })
 
@@ -117,7 +118,7 @@ export async function generateMetadata({
   const apiToken = process.env.STRAPI_API_TOKEN
 
   const client = createStrapiClient({
-    apiUrl: process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337',
+    apiUrl: process.env.NEXT_PUBLIC_STRAPI_URL || DEFAULT_STRAPI_URL,
     apiToken,
   })
   const res: PageCollectionResponse = await client.findMany('pages', {
