@@ -17,10 +17,10 @@
   "dependencies": {
     "framer-motion": "^13.2.0",
     "js-cookie": "^3.0.8",
-    "next": "16.3.4",
+    "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "resend": "^6.26.0",
+    "resend": "^6.28.0",
     "sanitize-html": "^2.17.7"
   },
   "devDependencies": {
@@ -34,10 +34,10 @@
     "@types/react-dom": "^19",
     "@types/sanitize-html": "^2.16.1",
     "eslint": "^9",
-    "eslint-config-next": "16.3.4",
+    "eslint-config-next": "16.3.5",
     "husky": "^9.1.6",
     "jsdom": "^30.0.1",
-    "lint-staged": "^17.5.0",
+    "lint-staged": "^17.5.1",
     "prettier": "^3.9.6",
     "strapi-to-typescript": "^2.0.15",
     "tailwindcss": "^4",
