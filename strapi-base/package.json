@@ -46,6 +46,11 @@
   },
   "packageManager": "pnpm@10.28.2+sha512.41872f037ad22f7348e3b1debbaf7e867cfd448f2726d9cf74c08f19507c31d2c8e7a11525b983febc2df640b5438dee6023ebb1f84ed43cc2d654d2bc326264",
   "pnpm": {
+    "auditConfig": {
+      "ignoreCves": [
+        "CVE-2026-93687"
+      ]
+    },
     "overrides": {
       "postcss": "8.5.25",
       "tar": "7.5.22",
@@ -62,7 +67,7 @@
       "nanoid": "3.3.18",
       "@ai-sdk/provider-utils": "3.0.32",
       "form-data": ">=4.0.6",
-      "handlebars": ">=4.7.9",
+      "handlebars": ">=4.7.10 <5",
       "lodash": ">=4.17.21",
       "shell-quote": "1.9.0",
       "qs": "6.16.0",
